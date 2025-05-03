@@ -1,6 +1,7 @@
 # views.py
 import json
-
+from datetime import datetime, date, time, timedelta
+from django.db.models.functions import TruncDate
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth import login as auth_login, logout as auth_logout, update_session_auth_hash
 from django.contrib.auth.views import LoginView, LogoutView
@@ -14,13 +15,24 @@ from django.utils import timezone
 from django.urls import reverse, reverse_lazy
 from django.http import JsonResponse, HttpResponseRedirect, Http404
 from django.db import transaction
-import datetime # Analytics uchun
-
+import datetime
+import json
+import os
+from datetime import datetime
+import google.generativeai as genai
+from django.conf import settings # To get the API key
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from django.contrib.auth.decorators import login_required
+from .models import Scholarship # Import your Scholarship model
 from .models import Profile, Scholarship, Application, Document, FAQItem, Notification
 from .forms import (
     RegistrationForm, ProfileForm, CustomUserChangeForm, ScholarshipForm,
     ApplicationForm, UserForm
 )
+
+
+
 
 # --- Helper funksiyalar ---
 def is_admin_or_superadmin(user):
@@ -160,58 +172,111 @@ def all_applications(request):
 @login_required
 @user_passes_test(is_admin_or_superadmin)
 def analytics(request):
-    date_start_str = request.GET.get('date_start', (timezone.now() - timezone.timedelta(days=30)).strftime('%Y-%m-%d'))
-    date_end_str = request.GET.get('date_end', timezone.now().strftime('%Y-%m-%d'))
+    # --- Date Filtering ---
+    # Get date strings from GET parameters, default to last 30 days
+    default_end_date = timezone.now().date()
+    # Use timedelta directly because of the import style
+    default_start_date = default_end_date - timedelta(days=30)
+    date_start_str = request.GET.get('date_start', default_start_date.strftime('%Y-%m-%d'))
+    date_end_str = request.GET.get('date_end', default_end_date.strftime('%Y-%m-%d'))
 
     try:
-        date_start = datetime.datetime.strptime(date_start_str, '%Y-%m-%d').date()
-        date_end = datetime.datetime.strptime(date_end_str, '%Y-%m-%d').date()
+        # Parse the date strings into actual date objects
+        # Use datetime.strptime directly
+        date_start = datetime.strptime(date_start_str, '%Y-%m-%d').date()
+        date_end_obj = datetime.strptime(date_end_str, '%Y-%m-%d').date()
+        # Use timedelta directly
+        date_end_for_filter = date_end_obj + timedelta(days=1) # Use this for filtering < end_date+1
+        date_end = date_end_obj # Use the original end date for display
+
     except ValueError:
-        # Agar sana formati noto'g'ri bo'lsa, standart davrni ishlatish
-        date_end = timezone.now().date()
-        date_start = date_end - timezone.timedelta(days=30)
+        # Fallback to defaults if parsing fails
+        date_end = default_end_date
+        # Use timedelta directly
+        date_start = date_end - timedelta(days=30)
         date_start_str = date_start.strftime('%Y-%m-%d')
         date_end_str = date_end.strftime('%Y-%m-%d')
-        messages.warning(request, "Sana formati noto'g'ri, standart 30 kunlik davr ishlatildi.")
+        # Use timedelta directly
+        date_end_for_filter = date_end + timedelta(days=1)
+        messages.warning(request, "Sana formati noto'g'ri yoki mavjud emas. Standart 30 kunlik davr ishlatildi.")
 
-    # 1. Ariza holatlari
+    # --- Chart Data ---
+
+    # 1. Application Status Chart
     status_counts_qs = Application.objects.filter(
-        submission_date__date__range=(date_start, date_end)
+        submission_date__gte=date_start,
+        submission_date__lt=date_end_for_filter
     ).values('status').annotate(count=Count('id')).order_by('status')
+
     status_choices_dict = dict(Application.STATUS_CHOICES)
-    status_chart_labels = [status_choices_dict.get(s['status'], s['status'].capitalize()) for s in status_counts_qs]
+    status_chart_labels = [status_choices_dict.get(s['status'], str(s['status']).capitalize()) for s in status_counts_qs]
     status_chart_data = [s['count'] for s in status_counts_qs]
 
-    # 2. Arizalar dinamikasi (kunlar bo'yicha)
+    # 2. Application Trend Chart (Daily)
     trend_data = Application.objects.filter(
-        submission_date__date__range=(date_start, date_end)
-    ).extra(select={'day': 'date(submission_date)'}).values('day').annotate(count=Count('id')).order_by('day')
-    trend_chart_labels = [t['day'].strftime('%d-%b') for t in trend_data] # Formatni o'zgartirish
+        submission_date__gte=date_start,
+        submission_date__lt=date_end_for_filter
+    ).annotate(
+        day=TruncDate('submission_date')
+    ).values('day').annotate(
+        count=Count('id')
+    ).order_by('day')
+
+    trend_chart_labels = [t['day'].strftime('%d-%b') for t in trend_data if t.get('day')]
     trend_chart_data = [t['count'] for t in trend_data]
 
-    # 3. Ma'qullanish % (Backendda hisoblash murakkab, JSda qilsa bo'ladi yoki taxminiy)
+    # 3. Success Rate Chart (Placeholder - needs logic)
+    success_rate_chart_labels = []
+    success_rate_chart_data = []
 
-    # 4. Foydalanuvchi rollari
+    # 4. User Roles Chart
     role_counts_qs = Profile.objects.values('role').annotate(count=Count('id')).order_by('role')
     role_choices_dict = dict(Profile.ROLE_CHOICES)
-    role_chart_labels = [role_choices_dict.get(r['role'], r['role']) for r in role_counts_qs]
+    role_chart_labels = [role_choices_dict.get(r['role'], str(r['role'])) for r in role_counts_qs]
     role_chart_data = [r['count'] for r in role_counts_qs]
 
-    # 5. KPI
-    new_users_count = User.objects.filter(date_joined__date__range=(date_start, date_end)).count()
-    avg_review_time_agg = Application.objects.filter(
-        status__in=['approved', 'rejected'],
-        last_updated__date__range=(date_start, date_end)
-    ).annotate(
-        duration=ExpressionWrapper(F('last_updated') - F('submission_date'), output_field=DurationField())
-    ).aggregate(avg_duration=Avg('duration'))
-    avg_days = avg_review_time_agg['avg_duration'].days if avg_review_time_agg.get('avg_duration') else 0
+    # 5. KPIs
+    # New users within the selected period
+    try:
+        # Use datetime.combine and time.min directly
+        start_dt = datetime.combine(date_start, time.min, tzinfo=timezone.get_current_timezone())
+        end_dt = datetime.combine(date_end_for_filter, time.min, tzinfo=timezone.get_current_timezone())
 
+        new_users_count = User.objects.filter(
+            date_joined__gte=start_dt,
+            date_joined__lt=end_dt
+        ).count()
+
+        # Average review time for applications decided within the period
+        avg_review_time_agg = Application.objects.filter(
+            status__in=['approved', 'rejected'],
+            # Use datetime.combine and time.min directly
+            last_updated__gte=start_dt,
+            last_updated__lt=end_dt
+        ).annotate(
+            duration=ExpressionWrapper(F('last_updated') - F('submission_date'), output_field=DurationField())
+        ).aggregate(avg_duration=Avg('duration'))
+
+        # Extract days from the average duration (handle None case)
+        avg_days = 0
+        if avg_review_time_agg and avg_review_time_agg.get('avg_duration'):
+            # avg_duration is a timedelta object
+            avg_days = avg_review_time_agg['avg_duration'].days
+
+    except Exception as e:
+        # Handle potential errors during KPI calculation, e.g., timezone issues
+        messages.error(request, f"KPI hisoblashda xatolik: {e}")
+        new_users_count = 0
+        avg_days = 0
+        # Optionally log the error e for debugging
+
+    # --- Context for Template ---
     context = {
         'date_start': date_start_str,
         'date_end': date_end_str,
         'status_chart': {'labels': status_chart_labels, 'data': status_chart_data},
         'trend_chart': {'labels': trend_chart_labels, 'data': trend_chart_data},
+        'success_rate_chart': {'labels': success_rate_chart_labels, 'data': success_rate_chart_data},
         'role_chart': {'labels': role_chart_labels, 'data': role_chart_data},
         'kpi_new_users': new_users_count,
         'kpi_avg_review_days': avg_days,
@@ -244,17 +309,72 @@ def find_scholarships(request):
         'type_choices': Scholarship.TYPE_CHOICES,
     }
     return render(request, 'find_scholarships.html', context)
+############################################################
+
+GEMINI_API_KEY = "AIzaSyA8VtLhUnjrUKPHhFUbBxfJXYKR5SlZkq8"
+
+# Gemini AI ni sozlash
+try:
+    genai.configure(api_key=GEMINI_API_KEY)
+    # Modelni yaratish (masalan, 'gemini-pro')
+    model = genai.GenerativeModel('gemini-2.0-flash')
+except Exception as e:
+    print(f"Gemini sozlamalarida xatolik: {e}")
+    # Agar sozlashda xatolik bo'lsa, modelni None qilib qo'yish mumkin
+    model = None
 
 @login_required
 def help_center(request):
-    search_query = request.GET.get('search')
-    query = Q(is_active=True)
-    if search_query:
-        query &= (Q(question__icontains=search_query) | Q(answer__icontains=search_query))
-    faq_items = FAQItem.objects.filter(query).order_by('order')
-    context = {'faq_items': faq_items, 'search_query': search_query or ""}
-    return render(request, 'help_center.html', context)
+    search_query = request.GET.get('search', '').strip() # .strip() bosh/oxiridagi bo'shliqlarni olib tashlaydi
+    ai_response = None
+    error_message = None
 
+    if not model:
+        error_message = "Sun'iy intellekt xizmati hozircha mavjud emas. Sozlamalarni tekshiring."
+
+    elif search_query:
+        try:
+            # Maxsuslashtirilgan Prompt (Ko'rsatma)
+            prompt = f"""
+            Sen O'zbekistondagi davlat grantlari, nomdor davlat stipendiyalari (masalan, Islom Karimov nomidagi davlat stipendiyasi, Navoiy nomidagi davlat stipendiyasi va boshqalar) va Zulfiya nomidagi Davlat mukofoti haqida ma'lumot berishga ixtisoslashgan yordamchi AI assistantisan.
+
+            Sening vazifang quyidagilardan iborat:
+            1. Yuqorida sanab o'tilgan grantlar, stipendiyalar va mukofotlar haqida UMUMIY ma'lumot berish (ularning maqsadi, kimlar uchunligi, qanday afzalliklar berishi va hokazo).
+            2. Ushbu dasturlarga ariza topshirish uchun talab qilinadigan ASOSIY HUJJATLAR ro'yxatini taqdim etish.
+
+            MUHIM QOIDALAR:
+            - Faqat va faqat yuqorida ko'rsatilgan mavzular (O'zbekiston grantlari, nomdor stipendiyalari, Zulfiya mukofoti va ularga kerakli hujjatlar) bo'yicha javob ber. Boshqa HECH QANDAY mavzuga javob berma.
+            - Agar foydalanuvchi boshqa mavzuda savol bersa (masalan, "ob-havo qanday?", "matematika haqida gapir", "chet el grantlari bormi?" kabi), quyidagi javobni QAT'IY ravishda qaytar: "Kechirasiz, men faqat O'zbekistondagi davlat grantlari, nomdor davlat stipendiyalari va Zulfiya mukofoti hamda ularga kerakli hujjatlar haqida ma'lumot bera olaman."
+            - Javoblaring aniq, qisqa va tushunarli bo'lsin. Hujjatlar ro'yxatini iloji bo'lsa raqamlangan yoki belgili ro'yxat ko'rinishida ber.
+            - Agar so'ralgan ma'lumot bo'yicha aniq biliming bo'lmasa yoki ma'lumot topa olmasang, "Bu haqida hozircha aniq ma'lumotim yo'q" yoki shunga o'xshash javob ber. Taxminiy ma'lumot bermaslikka harakat qil.
+
+            Foydalanuvchi savoli: "{search_query}"
+
+            Javobingni faqat yuqoridagi qoidalarga amal qilgan holda shakllantir.
+            """
+
+            # Gemini AI ga so'rov yuborish
+            response = model.generate_content(prompt)
+            ai_response = response.text
+
+        except Exception as e:
+            # Xatolikni log qilish (production uchun logging sozlamalarini ishlating)
+            print(f"Gemini API so'rovida xatolik: {e}")
+            # Foydalanuvchiga xatolik haqida xabar berish
+            error_message = "Sun'iy intellekt bilan bog'lanishda xatolik yuz berdi. Iltimos keyinroq qayta urinib ko'ring yoki administratsiya bilan bog'laning."
+            # Xatolik yuz berganda ai_response ni None qilib qoldiramiz yoki xato xabarini beramiz
+            # ai_response = error_message
+
+
+
+    context = {
+        # 'faq_items': faq_items, # Endi bu kerak emas
+        'search_query': search_query,
+        'ai_response': ai_response,
+        'error_message': error_message, # Xatolik xabarini ham jo'natamiz
+    }
+    return render(request, 'help_center.html', context)
+####################################################
 @login_required
 @user_passes_test(is_admin_or_superadmin)
 def manage_scholarships(request):
@@ -428,20 +548,17 @@ def submit_application(request):
                 application.scholarship = scholarship
                 if not application_instance: # Agar yangi ariza bo'lsa
                      application.status = 'submitted'
-                # Agar aniqlashtirishdan keyin yuborilsa, statusni 'reviewing' ga o'tkazish mumkin
-                # elif application_instance and application_instance.status == 'clarification':
-                #     application.status = 'reviewing'
+
                 application.save()
 
-                # Eski hujjatlarni o'chirish (agar tahrirlash bo'lsa va fayl yangilansa - murakkabroq)
-                # Yangi hujjatlarni saqlash
+
                 doc_fields = {
                     'id_card': form.cleaned_data.get('doc_id_file'), 'transcript': form.cleaned_data.get('doc_transcript_file'),
                     'motivation': form.cleaned_data.get('doc_motivation_file'), 'recommendation': form.cleaned_data.get('doc_recommendation_file'),
                 }
                 for doc_type, file in doc_fields.items():
                     if file:
-                        # Eski faylni topib o'chirish (agar mavjud bo'lsa va yangisi yuklansa)
+
                         Document.objects.filter(application=application, document_type=doc_type).delete()
                         Document.objects.create(application=application, document_type=doc_type, file=file)
 

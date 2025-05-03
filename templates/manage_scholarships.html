@@ -153,8 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const saveBtn = document.getElementById('modal-save-btn');
     const nonFieldErrorsDiv = document.getElementById('form-non-field-errors'); // Xatolik uchun div
 
-    // --- Helper Functions ---
-    function getCookie(name) { // CSRF token olish
+    function getCookie(name) {
         let cookieValue = null;
         if (document.cookie && document.cookie !== '') {
             const cookies = document.cookie.split(';');
@@ -170,12 +169,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function showToast(message, title = 'Bildirishnoma', type = 'info', duration = 5000) {
-        // Sizning Toast xabarnoma funksiyangiz (agar mavjud bo'lsa)
         console.log(`[${type.toUpperCase()}] ${title}: ${message}`);
-        // Haqiqiy Toast kutubxonasini chaqirish kerak bo'ladi
         const messagesContainer = document.querySelector('.messages-container') || document.body; // Yoki boshqa konteyner
         const toast = document.createElement('div');
-        toast.className = `toast-message toast-${type}`; // CSS klasslari
+        toast.className = `toast-message toast-${type}`;
         toast.innerHTML = `<span>${message}</span><button type="button" class="btn-close-toast" onclick="this.parentElement.remove();">×</button>`;
         messagesContainer.appendChild(toast);
         setTimeout(() => {
@@ -185,7 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }, duration);
     }
 
-    function clearFormErrors() { // Formadagi xatoliklarni tozalash
+    function clearFormErrors() {
         nonFieldErrorsDiv.style.display = 'none';
         nonFieldErrorsDiv.innerHTML = '';
         form.querySelectorAll('.form-group').forEach(fg => {
@@ -195,7 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
         form.querySelectorAll('input, select, textarea').forEach(inp => inp.style.borderColor = '');
     }
 
-    function displayFormErrors(errors) { // Formalardagi xatoliklarni ko'rsatish
+    function displayFormErrors(errors) {
         clearFormErrors();
         for (const field in errors) {
             if (field === '__all__') {
@@ -217,26 +214,25 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
-    // --- Modal Ochish/Yopish Logikasi ---
+
     function openModal(data = null) {
-        clearFormErrors(); // Xatoliklarni tozalash
+        clearFormErrors();
         form.reset();
-        form.action = "{% url 'scholarship_create' %}"; // Default action
+        form.action = "{% url 'scholarship_create' %}";
         editIdInput.value = '';
         modalTitle.textContent = 'Yangi stipendiya qoʻshish';
 
-        if (data) { // Tahrirlash rejimi
-            form.action = `/api/scholarships/update/${data.id}/`; // API URL ga o'zgartirish
-            editIdInput.value = data.id; // ID ni hidden inputga qo'yish
+        if (data) {
+            form.action = `/api/scholarships/update/${data.id}/`;
+            editIdInput.value = data.id;
             modalTitle.textContent = 'Stipendiyani tahrirlash';
-            // Formani backenddan kelgan ma'lumotlar bilan to'ldirish
+
             for (const key in data) {
-                const input = form.elements[key]; // Form elementini topish
+                const input = form.elements[key];
                 if (input) {
                     if (input.type === 'checkbox') {
                         input.checked = data[key];
                     } else if (input.type === 'date') {
-                        // Sana formati YYYY-MM-DD bo'lishi kerak
                         input.value = data[key] ? data[key].split('T')[0] : '';
                     } else {
                         input.value = data[key];
@@ -244,20 +240,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         }
-        modal.classList.add('active'); // <<-- MODALNI KO'RSATISH
+        modal.classList.add('active');
          // Birinchi inputga fokus berish
          setTimeout(() => { form.elements['name']?.focus(); }, 100);
     }
 
     function closeModal() {
-        modal.classList.remove('active'); // <<-- MODALNI YASHIRISH
+        modal.classList.remove('active');
     }
 
     // Event Listenerlar
-    addBtn.addEventListener('click', () => openModal()); // Qo'shish tugmasi
-    closeBtn.addEventListener('click', closeModal);      // Yopish (X) tugmasi
-    cancelBtn.addEventListener('click', closeModal);     // Bekor qilish tugmasi
-    modal.addEventListener('click', (e) => {              // Tashqariga bossa yopish
+    addBtn.addEventListener('click', () => openModal());
+    closeBtn.addEventListener('click', closeModal);
+    cancelBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
         if (e.target === modal) closeModal();
     });
 
@@ -265,10 +261,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.edit-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const schId = e.currentTarget.dataset.schid;
-            saveBtn.disabled = true; // Ma'lumot yuklanayotganda saqlashni bloklash
+            saveBtn.disabled = true;
             saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Yuklanmoqda...';
-            // Backenddan ma'lumotlarni olish (API endpoint orqali)
-            fetch(`/api/scholarships/update/${schId}/`, { // GET so'rovi
+            fetch(`/api/scholarships/update/${schId}/`, { // GET so'rov
                  headers: {'X-Requested-With': 'XMLHttpRequest'}
             })
             .then(response => {
@@ -276,14 +271,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 return response.json();
             })
             .then(data => {
-                openModal(data); // Modalni ma'lumotlar bilan ochish
+                openModal(data);
             })
             .catch(error => {
                 console.error("Error fetching scholarship:", error);
                 showToast('Stipendiya maʼlumotlarini olishda xatolik.', 'Xatolik', 'error');
             })
             .finally(() => {
-                saveBtn.disabled = false; // Saqlash tugmasini aktiv qilish
+                saveBtn.disabled = false;
                 saveBtn.innerHTML = 'Saqlash';
             });
         });

@@ -2,7 +2,7 @@
 
 from django.urls import path
 from . import views
-# import json # Bu import bu yerda KERAK EMAS. Uni olib tashlang.
+
 
 urlpatterns = [
     # Autentifikatsiya

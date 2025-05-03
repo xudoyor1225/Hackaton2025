@@ -111,10 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.addEventListener('click', (e) => {
             const appId = e.currentTarget.dataset.appid;
             // TODO: AJAX orqali backenddan ariza tafsilotlarini olish
-            // Masalan: fetch(`/api/my-applications/${appId}/`)
-            // .then(...)
-            // .then(data => { ... ma'lumotlarni joylashtirish ... })
-             // --- DEMO uchun statik ma'lumot ---
+
              document.getElementById('details-app-id').textContent = appId;
              // Quyidagi ma'lumotlar AJAX javobidan kelishi kerak
              document.getElementById('details-scholarship').textContent = "Demo Stipendiya Nomi";
@@ -124,7 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
              document.getElementById('details-notes').textContent = "Hujjatlaringizni qayta tekshiring.\nImzo aniq emas.";
              detailsSection.style.display = 'block';
              detailsSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-             // --- DEMO tugadi ---
+
         });
     });
 
@@ -140,11 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const appId = button.dataset.appid;
             if (confirm('Haqiqatan ham bu arizani qaytarib olmoqchimisiz?')) {
                  // TODO: AJAX orqali backendga POST so'rov yuborish
-                 // Masalan: fetch(`/api/my-applications/${appId}/withdraw/`, { method: 'POST', headers: {'X-CSRFToken': ...} })
-                 // .then(...)
-                 // .then(data => { ... muvaffaqiyatli bo'lsa qatorni o'chirish yoki statusni yangilash ... })
 
-                 // --- DEMO uchun ---
                  showToast(`Ariza #${appId} qaytarib olindi (demo).`, 'Muvaffaqiyatli', 'warning');
                  button.closest('tr')?.remove(); // Qatorni o'chirish
                  // --- DEMO tugadi ---

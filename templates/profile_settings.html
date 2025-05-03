@@ -85,7 +85,6 @@
 
 {% block extra_scripts %}
 <script>
-// Avatar preview (ixtiyoriy)
 document.getElementById('{{ profile_form.avatar.id_for_label }}')?.addEventListener('change', function(event) {
     const preview = document.getElementById('avatar-preview');
     const file = event.target.files[0];

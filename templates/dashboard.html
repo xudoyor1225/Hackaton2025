@@ -89,7 +89,7 @@
                          <div class="stat-card-title">Faol koʻrib chiqilmoqda</div>
                      </div>
                       {# Use the specific count for reviewing status #}
-                     <div class="stat-card-value" data-target="{{ stats.active_reviewing.value }}">{{ stats.active_reviewing.value }}</div>
+                     <div class="stat-card-value" >{{ total_pending }}</div>
                      <div class="stat-card-footer">
                          {% if stats.active_reviewing.change is not None %}
                          {# Note: Logic might be reversed (fewer reviewing might be better?) Adjust if needed #}
@@ -124,7 +124,6 @@
                  </div>
             </div>
 
-            <!-- Charts and Totals Row -->
             <div class="dashboard-row">
                 <!-- Ariza holatlari bo'yicha grafik -->
                 <div class="chart-wrapper card-table-wrapper">
@@ -323,18 +322,15 @@
     }
     const csrftoken = getCookie('csrftoken');
 
-    // --- Chart Initialization ---
     function initApplicationsStatusChart(ctx, chartConfig) {
-        const statusColors = { // Using keys directly matching Application.STATUS_CHOICES display values
-            'Yuborilgan': 'rgba(54, 162, 235, 0.7)',   // Submitted (Blue)
-            'Ko\'rib chiqilmoqda': 'rgba(255, 159, 64, 0.7)', // Reviewing (Orange)
-            'Aniqlashtirilmoqda': 'rgba(255, 205, 86, 0.7)', // Clarification (Yellow)
-            'Ma\'qullangan': 'rgba(75, 192, 192, 0.7)',   // Approved (Green)
-            'Rad etilgan': 'rgba(255, 99, 132, 0.7)',    // Rejected (Red)
-            // Add default for safety
-            'default': 'rgba(201, 203, 207, 0.7)' // Gray
+        const statusColors = {
+            'Yuborilgan': 'rgba(54, 162, 235, 0.7)',
+            'Ko\'rib chiqilmoqda': 'rgba(255, 159, 64, 0.7)',
+            'Aniqlashtirilmoqda': 'rgba(255, 205, 86, 0.7)',
+            'Ma\'qullangan': 'rgba(75, 192, 192, 0.7)',
+            'Rad etilgan': 'rgba(255, 99, 132, 0.7)',
+            'default': 'rgba(201, 203, 207, 0.7)'
         };
-         // Map labels to colors, handle potential missing labels
         const backgroundColors = chartConfig.labels.map(label => statusColors[label] || statusColors['default']);
         const borderColors = backgroundColors.map(color => color.replace('0.7', '1'));
 
@@ -380,27 +376,24 @@
         document.getElementById('applicationsChart-loader')?.remove();
     }
 
-    // --- Animate Stat Card Values ---
     function animateValue(element, start, end, duration) {
-        if (!element || isNaN(end)) { // Check if end is a valid number
-             if(element) element.textContent = element.textContent || '0'; // Display current text or 0 if invalid
+        if (!element || isNaN(end)) {
+             if(element) element.textContent = element.textContent || '0';
              return;
          }
         let startTimestamp = null;
         const step = (timestamp) => {
             if (!startTimestamp) startTimestamp = timestamp;
             const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-            element.textContent = Math.floor(progress * (end - start) + start).toLocaleString('uz-UZ'); // Use locale for formatting if needed
+            element.textContent = Math.floor(progress * (end - start) + start).toLocaleString('uz-UZ');
             if (progress < 1) {
                 window.requestAnimationFrame(step);
             } else {
-                 element.textContent = end.toLocaleString('uz-UZ'); // Ensure final value is exact
-            }
+                 element.textContent = end.toLocaleString('uz-UZ');   }
         };
         window.requestAnimationFrame(step);
     }
 
-    // --- DOMContentLoaded Event Listener ---
     document.addEventListener('DOMContentLoaded', function() {
         // Initialize Chart
         const ctx = document.getElementById('applicationsChart')?.getContext('2d');
@@ -446,16 +439,14 @@
         // View Button Click
         document.querySelectorAll('.view-btn').forEach(button => {
             button.addEventListener('click', function() {
-                if (!detailsModal) return; // Don't proceed if modal doesn't exist
+                if (!detailsModal) return;
                 const url = this.dataset.url;
-                // Show loading state in modal maybe?
                 fetch(url)
                     .then(response => {
                         if (!response.ok) throw new Error(`Server xatosi: ${response.status}`);
                         return response.json();
                      })
                     .then(data => {
-                        // Populate Modal - Safely access data
                         document.getElementById('modal-app-id').textContent = data.id || 'N/A';
                         document.getElementById('modal-applicant-name').textContent = data.applicant_name || 'N/A';
                         document.getElementById('modal-applicant-email').textContent = data.applicant_email || 'N/A';
@@ -488,13 +479,11 @@
                     })
                     .catch(error => {
                         console.error('Error fetching application details:', error);
-                        // Consider using a more user-friendly notification system
                         alert(`Ariza ma'lumotlarini olishda xatolik: ${error.message}`);
                     });
             });
         });
 
-        // Edit/Change Status Button Click
         document.querySelectorAll('.edit-btn').forEach(button => {
              button.addEventListener('click', function() {
                 if (!statusModal) return;
@@ -508,7 +497,6 @@
             });
         });
 
-        // Change Status Form Submission
         const changeStatusForm = document.getElementById('changeStatusForm');
         if (changeStatusForm && statusModal) {
             changeStatusForm.addEventListener('submit', function(event) {
@@ -540,7 +528,6 @@
                 .then(({ status, body }) => {
                      if (status >= 200 && status < 300 && body.success) {
                         statusModal.hide();
-                        // Update table row
                         const row = document.querySelector(`button[data-app-id="${appId}"]`)?.closest('tr');
                         if (row) {
                            const statusCell = row.querySelector('td:nth-child(4) span.status-badge');
@@ -551,12 +538,8 @@
                            }
                            if(editBtn) editBtn.dataset.currentStatus = body.new_status;
                         }
-                         // Show success message (replace alert later)
                          alert('Status muvaffaqiyatli o\'zgartirildi!');
-                         // Force redraw totals if needed (more complex)
-                         // window.location.reload(); // Simple solution, but less smooth UX
                     } else {
-                        // Handle failure, show error message from response body if available
                         const errorMessage = body.error || (status === 403 ? "Ruxsat yo'q" : 'Noma\'lum xatolik yuz berdi.');
                         alert(`Xatolik (${status}): ${errorMessage}`);
                     }
@@ -566,14 +549,13 @@
                     alert('Statusni o\'zgartirishda server bilan bog\'lanishda xatolik yuz berdi.');
                 })
                 .finally(() => {
-                    // Re-enable button and restore text
                     submitButton.disabled = false;
                     submitButton.innerHTML = originalButtonText;
                  });
             });
         }
 
-    }); // End DOMContentLoaded
+    });
 </script>
 
 

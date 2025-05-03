@@ -1994,3 +1994,81 @@ body.auth-page {
         height: 250px; /* Adjust height */
     }
 }
+
+/* --- AI Assistant Section Styles --- */
+.ai-assistant-section {
+    background-color: #f8f9fa; /* Light background */
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 2rem;
+    margin-top: 2.5rem;
+    margin-bottom: 2.5rem;
+    text-align: center; /* Center heading and intro text */
+}
+
+.ai-assistant-section h2 {
+    font-size: 1.8rem;
+    margin-bottom: 0.5rem;
+    color: var(--primary-color, #0d6efd); /* Use primary color */
+}
+.ai-assistant-section h2 i {
+    margin-right: 0.5rem;
+}
+
+.ai-assistant-section p {
+    color: var(--text-light, #6c757d);
+    margin-bottom: 1.5rem;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.ai-interaction-box {
+    background-color: #ffffff;
+    padding: 1.5rem;
+    border-radius: 6px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+    text-align: left; /* Align form elements left */
+    max-width: 700px; /* Limit width */
+    margin-left: auto;
+    margin-right: auto;
+}
+
+#ai-question-input {
+    resize: vertical; /* Allow vertical resize only */
+}
+
+#ask-ai-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem; /* Space between icon and text */
+    /* Add any other button styling */
+}
+
+#ask-ai-btn .spinner-border {
+    width: 1em;
+    height: 1em;
+    border-width: .15em;
+}
+
+
+#ai-response-area {
+    min-height: 50px; /* Ensure area has some height */
+}
+
+.ai-loading-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    color: var(--text-light, #6c757d);
+    font-style: italic;
+}
+
+.ai-answer-content .alert {
+    margin-bottom: 0; /* Remove default alert margin */
+    text-align: left; /* Ensure answer text is left-aligned */
+    white-space: pre-wrap; /* Preserve line breaks from AI */
+}

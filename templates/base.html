@@ -1,5 +1,5 @@
 {% load static %}
-<!DOCTYPE html>
+
 <html lang="uz">
 <head>
     <meta charset="UTF-8">
@@ -12,9 +12,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     {# Asosiy CSS fayli #}
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
-    {# Grafiklar uchun kutubxona (agar kerak bo'lsa) #}
+    <link rel="stylesheet" href="{% static 'css/ai.css' %}">
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    {# Har bir sahifa uchun qo'shimcha head elementlari #}
+
     {% block extra_head %}{% endblock %}
 </head>
 <body class="dashboard-page {% block body_class %}{% endblock %}"> {# Body klassini o'zgartirish imkoniyati #}
@@ -83,7 +84,7 @@
                      {% if user.profile.role == 'superadmin' %}
                         <li class="menu-item {% if request.resolver_match.url_name == 'users' %}active{% endif %}"><a href="{% url 'users' %}" class="menu-link"><i class="fa-solid fa-users-gear"></i> <span>Foydalanuvchilar</span></a></li>
                      {% endif %}
-                    <li class="menu-item {% if request.resolver_match.url_name == 'analytics' %}active{% endif %}"><a href="{% url 'analytics' %}" class="menu-link"><i class="fa-solid fa-chart-pie"></i> <span>Tahlil</span></a></li>
+                        <li class="menu-item {% if request.resolver_match.url_name == 'analytics' %}active{% endif %}"><a href="{% url 'analytics' %}" class="menu-link"><i class="fa-solid fa-chart-pie"></i> <span>Tahlil</span></a></li>
                 </ul>
                 {% endif %} {# Admin menyusi tugashi #}
 

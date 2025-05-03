@@ -1,115 +1,629 @@
 {% extends 'base.html' %}
 {% load static %}
+
+{% block extra_styles %}
+<style>
+    /* --- Base & Variables --- */
+    :root {
+        /* Futuristic Color Palette */
+        --dark-bg: #0a0f1f; /* Deep dark blue/purple */
+        --card-bg-rgb: 30, 35, 55; /* Slightly lighter card base for rgba */
+        --primary-accent: #00f2ea; /* Vibrant Cyan/Teal */
+        --primary-accent-rgb: 0, 242, 234;
+        --secondary-accent: #ff007f; /* Magenta for contrast/alerts */
+        --secondary-accent-rgb: 255, 0, 127;
+        --text-primary: #e0e5f0; /* Light grey/white for body text */
+        --text-secondary: #a0a8c0; /* Lighter grey for secondary text */
+        --text-dark: #1a1f30; /* Dark text for light backgrounds (like focused input) */
+        --border-color: rgba(255, 255, 255, 0.1); /* Subtle border */
+        --glow-color: rgba(var(--primary-accent-rgb), 0.3);
+        --error-color: #ff4d8d; /* Brighter pink/red for errors */
+        --error-bg-rgb: 255, 77, 141;
+
+        /* Fonts */
+        --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+        /* Transitions */
+        --transition-fast: 0.2s ease-out;
+        --transition-medium: 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); /* Smooth bounce */
+    }
+
+    body {
+        background-color: var(--dark-bg);
+        color: var(--text-primary);
+        font-family: var(--font-sans);
+        line-height: 1.6;
+    }
+
+    .main-content-wrapper {
+       /* Assuming this wrapper exists in base.html */
+       background-color: var(--dark-bg); /* Ensure dark bg */
+    }
+
+    /* --- Page Layout --- */
+    .page-content {
+        max-width: 950px; /* Slightly wider */
+        margin: 30px auto;
+        padding: 0 20px;
+    }
+
+    /* --- Futuristic Help Banner --- */
+    .help-search-banner {
+        background: linear-gradient(140deg, rgba(var(--primary-accent-rgb), 0.1), rgba(var(--dark-bg), 0.5)),
+                    radial-gradient(circle at top left, rgba(var(--primary-accent-rgb), 0.2), transparent 60%),
+                    var(--dark-bg);
+        color: var(--text-primary);
+        padding: 60px 40px;
+        border-radius: 20px; /* Smoother radius */
+        text-align: center;
+        margin-bottom: 50px;
+        border: 1px solid var(--border-color);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), inset 0 0 80px rgba(var(--primary-accent-rgb), 0.05);
+        position: relative;
+        overflow: hidden; /* For potential pseudo-elements */
+    }
+
+    .help-search-banner h1 {
+        margin-bottom: 15px;
+        font-weight: 700;
+        font-size: 2.8rem; /* Larger */
+        letter-spacing: 0.5px;
+        color: #fff; /* Ensure pure white for title */
+        text-shadow: 0 2px 10px rgba(var(--primary-accent-rgb), 0.3);
+    }
+
+    .help-search-banner p {
+        font-size: 1.2rem;
+        color: var(--text-secondary);
+        opacity: 0.9;
+        margin-bottom: 30px;
+        max-width: 700px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    /* --- Sleek Search Bar --- */
+    .search-bar {
+        position: relative;
+        max-width: 650px;
+        margin: 0 auto;
+    }
+
+    .search-bar i.fa-magnifying-glass {
+        position: absolute;
+        left: 22px; /* More padding */
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-secondary);
+        font-size: 1.1rem;
+        transition: color var(--transition-fast);
+        pointer-events: none; /* Prevent icon interaction */
+    }
+
+    .search-bar input[type="text"] {
+        width: 100%;
+        padding: 18px 25px 18px 60px; /* Increased padding, icon space */
+        border-radius: 50px; /* Fully rounded */
+        border: 1px solid var(--border-color);
+        font-size: 1.1rem;
+        font-weight: 500;
+        background-color: rgba(var(--card-bg-rgb), 0.3); /* Semi-transparent */
+        backdrop-filter: blur(5px); /* Glass effect */
+        color: var(--text-primary);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        transition: background-color var(--transition-fast),
+                    border-color var(--transition-fast),
+                    box-shadow var(--transition-fast);
+        outline: none; /* Remove default outline */
+    }
+    .search-bar input[type="text"]::placeholder {
+        color: var(--text-secondary);
+        opacity: 0.7;
+    }
+    .search-bar input[type="text"]:focus {
+        background-color: rgba(255, 255, 255, 0.95); /* Near white on focus */
+        color: var(--text-dark);
+        border-color: var(--primary-accent);
+        box-shadow: 0 0 0 4px var(--glow-color), 0 5px 20px rgba(0, 0, 0, 0.3); /* Glow effect */
+    }
+    .search-bar input[type="text"]:focus + i.fa-magnifying-glass {
+        color: var(--primary-accent);
+    }
+
+    /* --- Section Headings --- */
+    .ai-response-section h2,
+    .contact-support-section h2 {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        font-size: 2rem; /* Larger heading */
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 30px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid var(--border-color);
+        letter-spacing: 0.5px;
+    }
+    .ai-response-section h2 i,
+    .contact-support-section h2 i {
+        color: var(--primary-accent);
+        font-size: 1.8rem; /* Slightly smaller than text */
+        text-shadow: 0 0 10px var(--glow-color);
+    }
+
+    /* --- Base Card Style (Glassmorphism) --- */
+    .glass-card {
+        background-color: rgba(var(--card-bg-rgb), 0.15); /* More transparent */
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px); /* Safari */
+        border: 1px solid rgba(255, 255, 255, 0.1); /* Subtle border */
+        border-radius: 16px;
+        padding: 30px;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25);
+        position: relative;
+        overflow: hidden; /* Important for backdrop-filter and potential effects */
+        transition: transform var(--transition-medium), box-shadow var(--transition-medium);
+        margin-bottom: 25px; /* Consistent spacing */
+    }
+     /* Optional: Subtle hover effect for cards */
+    /*
+    .glass-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.3);
+    }
+    */
+
+    /* --- AI Answer Card --- */
+    .ai-answer-card {
+        /* Inherits .glass-card styles */
+        line-height: 1.7;
+        padding: 35px; /* More padding */
+    }
+    .ai-answer-card pre {
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        font-family: 'Fira Code', monospace; /* Monospaced font looks more techy */
+        font-size: 1rem;
+        color: var(--text-primary);
+        background-color: rgba(0, 0, 0, 0.3); /* Darker transparent background */
+        padding: 20px;
+        border-radius: 8px;
+        border: 1px solid rgba(var(--primary-accent-rgb), 0.2); /* Accent border */
+        max-height: 600px;
+        overflow-y: auto;
+        /* Custom scrollbar */
+        scrollbar-width: thin;
+        scrollbar-color: var(--primary-accent) rgba(var(--card-bg-rgb), 0.3);
+    }
+    .ai-answer-card pre::-webkit-scrollbar {
+        width: 8px;
+    }
+    .ai-answer-card pre::-webkit-scrollbar-track {
+        background: rgba(var(--card-bg-rgb), 0.3);
+        border-radius: 4px;
+    }
+    .ai-answer-card pre::-webkit-scrollbar-thumb {
+        background-color: var(--primary-accent);
+        border-radius: 4px;
+        border: 2px solid rgba(var(--card-bg-rgb), 0.3);
+    }
+
+    /* --- Error Message --- */
+    .ai-error-message {
+        background-color: rgba(var(--error-bg-rgb), 0.15); /* Use error color */
+        border: 1px solid rgba(var(--error-bg-rgb), 0.4);
+        color: var(--error-color); /* Brighter error text */
+        border-radius: 12px;
+        padding: 20px 25px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 30px; /* Space below error */
+        font-weight: 500;
+    }
+    .ai-error-message i {
+        font-size: 1.4rem;
+        flex-shrink: 0; /* Prevent icon shrinking */
+    }
+
+    /* --- Initial Info Card --- */
+    .initial-info-card {
+        /* Inherits .glass-card styles */
+        text-align: center;
+        padding: 50px 40px;
+        border-style: dashed; /* Keep dashed */
+        border-color: rgba(var(--primary-accent-rgb), 0.3); /* Accent dashed border */
+    }
+    .initial-info-card i {
+        font-size: 3.5rem;
+        color: var(--primary-accent);
+        margin-bottom: 25px;
+        display: block;
+        text-shadow: 0 0 15px var(--glow-color);
+    }
+    .initial-info-card p {
+        font-size: 1.15rem;
+        color: var(--text-secondary);
+        line-height: 1.7;
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    /* --- Contact Support Section --- */
+    .contact-support-section {
+        margin-top: 60px; /* More space before contact */
+    }
+    .contact-support-card {
+         /* Inherits .glass-card styles */
+         text-align: center;
+         padding: 40px;
+    }
+     .contact-support-card i.fa-envelope-open-text {
+         font-size: 3.5rem; /* Larger icon */
+         color: var(--primary-accent);
+         margin-bottom: 20px;
+         text-shadow: 0 0 15px var(--glow-color);
+     }
+     .contact-support-card h3 {
+         margin-bottom: 15px;
+         font-size: 1.8rem; /* Larger title */
+         font-weight: 600;
+         color: var(--text-primary);
+     }
+      .contact-support-card p {
+          color: var(--text-secondary);
+          margin-bottom: 30px;
+          max-width: 500px;
+          margin-left: auto;
+          margin-right: auto;
+      }
+      /* Button Styling */
+      .btn {
+        display: inline-block;
+        font-weight: 600;
+        text-align: center;
+        vertical-align: middle;
+        user-select: none;
+        border: 1px solid transparent;
+        padding: 12px 30px; /* More padding */
+        font-size: 1rem;
+        border-radius: 50px; /* Fully rounded */
+        transition: all var(--transition-fast);
+        cursor: pointer;
+        text-decoration: none;
+        letter-spacing: 0.5px;
+      }
+      .btn-primary {
+          color: var(--dark-bg); /* Dark text on bright button */
+          background-color: var(--primary-accent);
+          border-color: var(--primary-accent);
+          box-shadow: 0 4px 15px rgba(var(--primary-accent-rgb), 0.3);
+      }
+      .btn-primary:hover {
+          background-color: #00d8d0; /* Slightly lighter/different shade */
+          border-color: #00d8d0;
+          box-shadow: 0 6px 20px rgba(var(--primary-accent-rgb), 0.5);
+          transform: translateY(-2px); /* Slight lift */
+          color: var(--dark-bg);
+      }
+      .btn-primary i {
+          margin-right: 8px; /* Space between icon and text */
+      }
+
+    /* --- Loading Spinner --- */
+    .loading-spinner {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(var(--card-bg-rgb), 0.5); /* Semi-transparent overlay */
+        backdrop-filter: blur(8px); /* Blur background content */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 10;
+        border-radius: 16px; /* Match card radius */
+        display: none; /* Hidden by default */
+        transition: opacity var(--transition-fast);
+    }
+    /* More engaging spinner */
+    .loading-spinner::before {
+        content: '';
+        display: block;
+        width: 50px;
+        height: 50px;
+        border: 4px solid rgba(var(--primary-accent-rgb), 0.2);
+        border-top-color: var(--primary-accent);
+        border-radius: 50%;
+        animation: futuristic-spin 1s linear infinite;
+        box-shadow: 0 0 15px var(--glow-color);
+    }
+    /* Remove old icon spinner */
+    /* .loading-spinner i { display: none; } */
+
+    @keyframes futuristic-spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+
+    /* --- Animations --- */
+    .animate-on-load {
+      opacity: 0;
+      transform: translateY(20px);
+      animation: fadeInUp 0.6s var(--transition-medium) forwards;
+    }
+
+    @keyframes fadeInUp {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Responsive adjustments if needed */
+    @media (max-width: 768px) {
+        .page-content {
+            margin-top: 20px;
+            padding: 0 15px;
+        }
+        .help-search-banner {
+            padding: 40px 20px;
+            border-radius: 15px;
+        }
+        .help-search-banner h1 {
+            font-size: 2.2rem;
+        }
+        .help-search-banner p {
+            font-size: 1rem;
+        }
+        .search-bar input[type="text"] {
+            padding: 15px 20px 15px 50px;
+            font-size: 1rem;
+        }
+        .search-bar i.fa-magnifying-glass {
+            left: 18px;
+        }
+        .ai-response-section h2,
+        .contact-support-section h2 {
+            font-size: 1.6rem;
+            gap: 10px;
+        }
+        .glass-card, .ai-answer-card, .initial-info-card, .contact-support-card {
+            padding: 25px;
+            border-radius: 12px;
+        }
+         .initial-info-card { padding: 40px 25px; }
+         .contact-support-card { padding: 30px 25px; }
+         .contact-support-card h3 { font-size: 1.5rem; }
+         .contact-support-card i.fa-envelope-open-text { font-size: 3rem; }
+    }
+
+</style>
+{% endblock extra_styles %}
+
 {% block content %}
 <div class="main-content-wrapper">
-    <!-- Header -->
+    <!-- Header (Assume it's styled appropriately in base.html or its own CSS) -->
      <header class="main-header">
-        <div class="header-left">
-            <button class="menu-toggle-btn" id="menu-toggle" title="Menyuni yig'ish/kengaytirish" aria-label="Menyu">
-                <i class="fa-solid fa-bars"></i>
-            </button>
-        </div>
-        <div class="header-right">
-            <div class="profile-dropdown" title="Profil sozlamalari">
-            </div>
-        </div>
-    </header>
+        <!-- Header content... -->
+     </header>
 
     <!-- Sahifa kontenti -->
     <main class="page-content">
         <!-- Yordam markazi banneri -->
         <div class="help-search-banner animate-on-load">
              <h1>Yordam Markazi</h1>
-             <p>Savollaringizga javob toping yoki qoʻllab-quvvatlash xizmati bilan bogʻlaning.</p>
-             <form method="get" class="search-bar"> {# Formaga o'rash #}
+             <p>O'zbekiston grantlari, nomdor stipendiyalari va Zulfiya mukofoti haqidagi savollaringizga AI yordamida javob oling.</p>
+             <form method="get" class="search-bar" id="help-search-form">
+                 <input type="text" name="search" id="help-search-input" placeholder="Savolingizni shu yerga yozing..." value="{{ search_query }}" required>
                  <i class="fa-solid fa-magnifying-glass"></i>
-                 <input type="text" name="search" id="help-search-input" placeholder="Savolingizni yoki kalit soʻzni kiriting..." value="{{ search_query }}">
-                 <button type="submit" style="display: none;">Qidir</button> {# Enter bosganda ishlashi uchun #}
+                 <button type="submit" style="display: none;">Qidir</button> {# Keep hidden submit for Enter key functionality #}
              </form>
          </div>
-         <div class="animate-on-load" style="animation-delay: 0.2s;">
-             <!-- FAQ bo'limi -->
-             <section class="faq-section">
-                 <h2><i class="fa-regular fa-comments"></i> Tez-tez Beriladigan Savollar (FAQ)</h2>
-                 <div class="accordion" id="faq-accordion">
-                      {% for item in faq_items %}
-                         <div class="accordion-item">
-                              <div class="accordion-header" role="button" tabindex="0" aria-expanded="false" aria-controls="content-{{ forloop.counter }}" id="header-{{ forloop.counter }}">
-                                  <span>{{ item.question }}</span>
-                                  <i class="fa-solid fa-chevron-down"></i>
-                              </div>
-                              <div class="accordion-content" id="content-{{ forloop.counter }}" role="region" aria-labelledby="header-{{ forloop.counter }}">
-                                  <div class="accordion-content-inner">
-                                      {{ item.answer|safe }} {# Javobda HTML bo'lishi mumkin #}
-                                  </div>
-                              </div>
-                          </div>
-                      {% empty %}
-                          <p style="text-align: center; color: var(--text-light); padding: 30px 0;">
-                              {% if search_query %}
-                                  Sizning soʻrovingiz boʻyicha hech narsa topilmadi.
-                              {% else %}
-                                  Hozircha savol-javoblar mavjud emas.
-                              {% endif %}
-                          </p>
-                      {% endfor %}
+
+         <div class="animate-on-load" style="animation-delay: 0.15s;">
+
+             <!-- AI Javobi Bo'limi -->
+             <section class="ai-response-section" style="margin-top: 50px;">
+
+                 {# Error message first if exists #}
+                 {% if error_message %}
+                 <div class="ai-error-message glass-card"> {# Apply glass effect optionally #}
+                     <i class="fa-solid fa-triangle-exclamation"></i> {# More appropriate error icon #}
+                     <span>{{ error_message }}</span>
                  </div>
+                 {% endif %}
+
+                 {% if search_query %}
+                     <h2><i class="fa-solid fa-microchip"></i> AI Yordamchi Javobi</h2> {# Changed icon #}
+
+                     <div class="ai-answer-card glass-card"> {# Apply glass effect #}
+                        {# Loading Spinner - uses ::before pseudo-element now #}
+                        <div class="loading-spinner" id="ai-loading-spinner">
+                            {# Content removed, spinner is CSS only #}
+                        </div>
+
+                         {% if ai_response %}
+                             {# Ensure <pre> gets the right styles #}
+                             <pre>{{ ai_response }}</pre>
+                         {% elif not error_message %}
+                             <p style="text-align: center; color: var(--text-secondary); padding: 20px 0;">
+                                 <i class="fa-regular fa-comments" style="font-size: 1.8rem; margin-bottom: 15px; display: block; color: var(--primary-accent);"></i> {# Changed icon & style #}
+                                 Kechirasiz, bu so'rov bo'yicha aniq ma'lumot topilmadi. Savolni boshqacha shaklda berib ko'ring.
+                             </p>
+                         {% endif %}
+                     </div>
+                 {% elif not error_message %} {# Initial state #}
+                     <div class="initial-info-card glass-card"> {# Apply glass effect #}
+                         <i class="fa-solid fa-lightbulb-on"></i> {# Changed icon #}
+                         <p>
+                             Grantlar, stipendiyalar, Zulfiya mukofoti yoki kerakli hujjatlar haqida ma'lumot olish uchun yuqoridagi maydonga savolingizni yozing va Qidirish tugmasini bosing (yoki Enter).
+                         </p>
+                     </div>
+                 {% endif %}
              </section>
+
              <!-- Qo'llab-quvvatlash xizmati -->
-             <section class="contact-support-section">
-                 <h2 style="text-align: center; font-size: 1.8rem; margin-bottom: 30px;"><i class="fa-solid fa-headset"></i> Javob topmadingizmi?</h2>
-                 <div class="contact-support-card">
+             <section class="contact-support-section" style="animation-delay: 0.3s;">
+                 <h2><i class="fa-solid fa-headset"></i> Yordam kerakmi?</h2>
+                 <div class="contact-support-card glass-card"> {# Apply glass effect #}
                      <i class="fa-solid fa-envelope-open-text"></i>
                      <h3>Biz bilan bogʻlaning</h3>
-                     <p>Qoʻllab-quvvatlash xizmatimiz har qanday savolingizga yordam berishga tayyor.</p>
-                     <a href="mailto:support@shaffofimkoniyat.uz" class="btn btn-primary"><i class="fa-solid fa-envelope"></i> Qoʻllab-quvvatlashga yozish</a>
+                     <p>Agar AI javobidan qoniqmasangiz yoki qo'shimcha savollaringiz bo'lsa, bizga yozing.</p>
+                     <a href="mailto:support@shaffofimkoniyat.uz" class="btn btn-primary"><i class="fa-solid fa-paper-plane"></i> Qoʻllab-quvvatlashga Yozish</a>
                  </div>
              </section>
          </div>
     </main>
-    <!-- Footer -->
+    <!-- Footer (Assume styled elsewhere) -->
 </div>
 {% endblock content %}
 
 {% block extra_scripts %}
-{# Akkordeon uchun JS (agar script.js da bo'lmasa) #}
+{# Keep the existing JS for loading spinner logic #}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    const accordionHeaders = document.querySelectorAll('.accordion-header');
-    accordionHeaders.forEach(header => {
-        header.addEventListener('click', toggleAccordionItem);
-        header.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                toggleAccordionItem.call(header, e);
-            }
-        });
-    });
-    function toggleAccordionItem() {
-        const item = this.closest('.accordion-item');
-        if (!item) return;
-        const content = item.querySelector('.accordion-content');
-        const isExpanded = this.getAttribute('aria-expanded') === 'true';
+    const searchForm = document.getElementById('help-search-form');
+    const searchInput = document.getElementById('help-search-input');
+    // Select the container where the spinner resides
+    const aiAnswerContainer = document.querySelector('.ai-answer-card');
+    const loadingSpinner = document.getElementById('ai-loading-spinner');
+    const urlParams = new URLSearchParams(window.location.search);
+    const searchQuery = urlParams.get('search');
+    const hasAiResponseElement = aiAnswerContainer ? aiAnswerContainer.querySelector('pre') : null;
+    const hasErrorMessageElement = document.querySelector('.ai-error-message');
 
-        // Boshqa ochiq elementlarni yopish (ixtiyoriy)
-        // this.closest('.accordion').querySelectorAll('.accordion-item.active').forEach(openItem => {
-        //     if (openItem !== item) {
-        //         openItem.classList.remove('active');
-        //         openItem.querySelector('.accordion-header').setAttribute('aria-expanded', 'false');
-        //         openItem.querySelector('.accordion-content').style.maxHeight = null;
-        //     }
-        // });
-
-        if (isExpanded) {
-            content.style.maxHeight = null;
-            this.setAttribute('aria-expanded', 'false');
-            item.classList.remove('active');
-        } else {
-            item.classList.add('active');
-            this.setAttribute('aria-expanded', 'true');
-            content.style.maxHeight = content.scrollHeight + "px";
+    // Function to show/hide spinner
+    const showSpinner = (show) => {
+        if (loadingSpinner) {
+            loadingSpinner.style.display = show ? 'flex' : 'none';
+            loadingSpinner.style.opacity = show ? '1' : '0';
         }
+        if (aiAnswerContainer) {
+            const contentElements = aiAnswerContainer.querySelectorAll('pre, p');
+             contentElements.forEach(el => el.style.visibility = show ? 'hidden' : 'visible');
+        }
+    };
+
+    if (searchForm && loadingSpinner) {
+        searchForm.addEventListener('submit', (event) => {
+            if (searchInput.value.trim() !== '') {
+                showSpinner(true);
+            }
+
+        });
+
+        if (searchQuery) {
+            if (hasAiResponseElement || hasErrorMessageElement) {
+                 showSpinner(false);
+             } else {
+
+             }
+        } else {
+            showSpinner(false);
+        }
+         if (loadingSpinner && loadingSpinner.style.display === 'none') {
+             if (aiAnswerContainer) {
+                 const contentElements = aiAnswerContainer.querySelectorAll('pre, p');
+                 contentElements.forEach(el => el.style.visibility = 'visible');
+             }
+         }
     }
 });
 </script>
+
+{# Uncomment and potentially add CSS for '.markdown-content' if using Markdown #}
+{# <script src="https://cdn.jsdelivr.net/npm/showdown/dist/showdown.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const answerCardPre = document.querySelector('.ai-answer-card pre');
+        if (answerCardPre && answerCardPre.textContent.trim()) {
+            try {
+                const converter = new showdown.Converter({
+                    simplifiedAutoLink: true,
+                    strikethrough: true,
+                    tables: true,
+                    tasklists: true,
+                    simpleLineBreaks: true
+                });
+                const rawMarkdown = answerCardPre.textContent;
+                const html = converter.makeHtml(rawMarkdown);
+
+                const outputDiv = document.createElement('div');
+                outputDiv.innerHTML = html;
+                outputDiv.classList.add('markdown-content'); // Style this class in CSS
+
+                // Replace <pre> with the new div
+                answerCardPre.parentNode.replaceChild(outputDiv, answerCardPre);
+            } catch (e) {
+                console.error("Error converting Markdown:", e);
+                // Keep the <pre> tag if conversion fails
+            }
+        }
+    });
+</script>
+#}
+{# Add CSS for .markdown-content if using the script above
+<style>
+.markdown-content {
+    line-height: 1.7;
+    color: var(--text-primary);
+}
+.markdown-content h1, .markdown-content h2, .markdown-content h3 {
+    color: var(--text-primary);
+    margin-top: 1.5em;
+    margin-bottom: 0.8em;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.3em;
+}
+.markdown-content p { margin-bottom: 1em; }
+.markdown-content ul, .markdown-content ol {
+    margin-left: 2em;
+    margin-bottom: 1em;
+}
+.markdown-content li { margin-bottom: 0.5em; }
+.markdown-content code {
+    background-color: rgba(0, 0, 0, 0.3);
+    padding: 0.2em 0.4em;
+    border-radius: 4px;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.9em;
+    color: var(--primary-accent);
+}
+.markdown-content pre {
+    /* Re-apply pre styles if needed within markdown */
+    background-color: rgba(0, 0, 0, 0.3);
+    padding: 15px;
+    border-radius: 6px;
+    border: 1px solid rgba(var(--primary-accent-rgb), 0.2);
+    overflow-x: auto;
+}
+.markdown-content pre code {
+     background-color: transparent;
+     padding: 0;
+     border-radius: 0;
+     font-size: 1em;
+     color: inherit;
+}
+.markdown-content a {
+    color: var(--primary-accent);
+    text-decoration: none;
+    border-bottom: 1px dashed var(--primary-accent);
+    transition: color var(--transition-fast), border-bottom-color var(--transition-fast);
+}
+.markdown-content a:hover {
+    color: #fff;
+    border-bottom-color: #fff;
+}
+.markdown-content blockquote {
+    border-left: 4px solid var(--primary-accent);
+    margin-left: 0;
+    padding-left: 1.5em;
+    color: var(--text-secondary);
+    font-style: italic;
+}
+</style>
+#}
 {% endblock %}

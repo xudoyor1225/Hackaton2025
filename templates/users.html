@@ -291,37 +291,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 'X-Requested-With': 'XMLHttpRequest'
             }
         })
-        // .then(response => response.json().then(data => ({ status: response.status, body: data }))) // Bu usul xatolik berishi mumkin agar javob JSON bo'lmasa
         .then(response => {
-             // Javobni tekshirish (redirect bo'lishi mumkin)
              if (response.redirected) {
-                 window.location.href = response.url; // Agar redirect bo'lsa, o'sha yerga o'tish
-                 return { success: true }; // Muvaffaqiyatli deb hisoblash
+                 window.location.href = response.url;
+                 return { success: true };
              }
              if (!response.ok) {
-                 // Agar javob OK bo'lmasa, JSON xatolikni olishga harakat qilish
+
                  return response.json().then(err => Promise.reject(err));
              }
-             return response.json(); // Agar javob OK bo'lsa JSONni olish
+             return response.json();
          })
         .then(data => {
-             // Agar redirect bo'lmagan bo'lsa va success true bo'lsa
+
              if (data && data.success) {
                 closeModal();
-                window.location.reload(); // Sahifani yangilash eng oson yo'li
+                window.location.reload();
              } else if (data && !data.success && data.errors) {
                  // Agar backend JSON xatolik qaytargan bo'lsa
                  displayFormErrors(data.errors);
                  showToast('Iltimos, formadagi xatoliklarni toʻgʻrilang.', 'Xatolik', 'error', 7000);
              }
-             // Agar redirect bo'lgan bo'lsa, bu qism ishlamaydi
         })
-        .catch(errorData => { // Bu yerda backenddan kelgan JSON xatolik yoki network xatoligi bo'lishi mumkin
+        .catch(errorData => {
             console.error('Error saving user:', errorData);
-            if (errorData && errorData.errors) { // Agar backenddan JSON xatolik kelgan bo'lsa
+            if (errorData && errorData.errors) {
                  displayFormErrors(errorData.errors);
                  showToast('Iltimos, formadagi xatoliklarni toʻgʻrilang.', 'Xatolik', 'error', 7000);
-            } else { // Network yoki boshqa xatolik
+            } else {
                 showToast('Server bilan bogʻlanishda yoki saqlashda xatolik.', 'Xatolik', 'error');
                 nonFieldErrorsDiv.innerHTML = 'Server bilan bogʻlanishda yoki saqlashda xatolik yuz berdi.';
                 nonFieldErrorsDiv.style.display = 'block';
@@ -356,12 +353,10 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(response => response.ok ? response.json() : Promise.reject('Error toggling status'))
             .then(data => {
                  if (data.success) {
-                     // Jadvaldagi statusni yangilash
                      const statusCell = document.getElementById(`status-cell-${userId}`);
                      if (statusCell) {
                           statusCell.innerHTML = `<span class="status-badge ${data.is_active ? 'status-approved' : 'status-rejected'}"><i class="fa-solid ${data.is_active ? 'fa-circle-check' : 'fa-circle-xmark'}"></i> ${data.status_display}</span>`;
                      }
-                     // Tugmani yangilash
                      button.title = data.is_active ? 'Faolsizlantirish' : 'Faollashtirish';
                      button.innerHTML = `<i class="fa-solid ${data.is_active ? 'fa-user-slash' : 'fa-user-check'}"></i>`;
                      showToast('Foydalanuvchi holati muvaffaqiyatli oʻzgartirildi.', 'Muvaffaqiyatli', 'success');

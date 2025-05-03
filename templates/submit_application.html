@@ -229,8 +229,6 @@
             requiredInputs.forEach(input => {
                 const formGroup = input.closest('.form-group');
                 let currentInputValid = true;
-                 // Ko'rinmaydigan inputlarni validatsiya qilmaslik (agar yashiringan bo'lsa)
-                 // if (input.offsetParent === null && input.type !== 'hidden') return;
 
                 if (input.type === 'checkbox' && !input.checked) {
                     currentInputValid = false;
@@ -301,7 +299,6 @@
             prevBtn.addEventListener('click', () => {
                 if (currentStep > 1) {
                     currentStep--;
-                     // Orqaga qaytganda validatsiya xatolarini tozalash (ixtiyoriy)
                      const currentSection = document.querySelector(`.form-section[data-section="${currentStep}"]`);
                      if(currentSection) clearValidationErrors(currentSection);
                     updateWizardState();
@@ -321,21 +318,17 @@
             });
         }
 
-        // Fayl inputlari uchun (onchange endi inputning o'zida)
         form.querySelectorAll('.actual-file-input').forEach(input => {
              input.addEventListener('change', () => {
-                 // Validatsiya xatosini tozalash
                   const formGroup = input.closest('.form-group');
                   formGroup?.classList.remove('has-error');
                   formGroup?.querySelector('.error-message')?.remove();
                   input.style.borderColor = '';
-                  // Oxirgi qadamda bo'lsa, fayllar sonini yangilash
                   if(currentStep === totalSteps) populateSummary();
              });
         });
 
-        // Boshlang'ich holat
-        if (scholarshipSelected && form) { // Forma va stipendiya mavjud bo'lsagina ishga tushirish
+        if (scholarshipSelected && form) {
             updateWizardState();
         } else if (!scholarshipSelected) {
             // Agar stipendiya tanlanmagan bo'lsa, navigatsiyani bloklash
