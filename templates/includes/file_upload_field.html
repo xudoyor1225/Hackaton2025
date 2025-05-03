@@ -1,0 +1,109 @@
+{# templates/includes/file_upload_field.html #}
+
+{# =================================================================== #}
+{#      Yordamchi Shablon: Fayl Yuklash Maydonini Render Qilish        #}
+{# =================================================================== #}
+{# Maqsad: Fayl yuklash maydonini custom label bilan chiqarish        #}
+{#                                                                     #}
+{# Qanday ishlatiladi:                                                 #}
+{# {% include 'includes/file_upload_field.html' with field=form.your_file_field input_id='your-input-id' filename_id='your-filename-span-id' %} #}
+{#                                                                     #}
+{# Kerakli kontekst o'zgaruvchilari:                                     #}
+{#   - field: Render qilinishi kerak bo'lgan Django FileField obyekti   #}
+{#   - input_id: Asl <input type="file"> uchun ID                    #}
+{#   - filename_id: Fayl nomi ko'rsatiladigan <span> uchun ID       #}
+{# =================================================================== #}
+
+{% if field %}
+    <div class="form-group {% if field.errors %}has-error{% endif %}">
+        {# Labelni chiqarish #}
+        <label for="{{ input_id }}"> {# input_id ga bog'laymiz #}
+            {{ field.label }}
+            {% if field.field.required %} <span class="required-indicator">*</span>{% endif %}
+        </label>
+
+        {# Custom fayl yuklash ko'rinishi uchun label #}
+        <label for="{{ input_id }}" class="file-upload-label">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+            {# Fayl nomi ko'rsatiladigan joy (JS yangilaydi) #}
+            <span id="{{ filename_id }}">Faylni tanlang yoki tortib olib keling</span>
+            {# Yordam matni (agar widgetda bo'lsa yoki field da) #}
+            {% if field.help_text %}
+                <small>{{ field.help_text|safe }}</small>
+            {% endif %}
+        </label>
+
+        {# Asl, yashiringan fayl inputi #}
+        {# Django {{ field }} ni o'zi render qiladi, shuning uchun uning atributlarini ishlatishimiz mumkin #}
+        {# Lekin ID ni o'zimiz berishimiz kerak, shuning uchun inputni to'liq yozamiz #}
+        <input type="file"
+               name="{{ field.name }}"
+               id="{{ input_id }}"
+               class="actual-file-input" {# Stil berish yoki JS uchun #}
+               {% if field.field.required %}required{% endif %}
+               {% if field.field.widget.attrs.accept %}accept="{{ field.field.widget.attrs.accept }}"{% endif %}
+               style="display: none;" {# Foydalanuvchidan yashirish #}
+               {# Bu inputga JS orqali fayl nomi o'zgarishini eshitish kerak #}
+               onchange="document.getElementById('{{ filename_id }}').textContent = this.files[0] ? this.files[0].name : 'Faylni tanlang yoki tortib olib keling';"
+               >
+
+        {# Xatoliklarni ko'rsatish #}
+        {% if field.errors %}
+            <div class="errorlist" id="{{ input_id }}-errors">
+                {% for error in field.errors %}
+                    <span class="error-message">
+                        <i class="fa-solid fa-circle-exclamation"></i>
+                        {{ error }}
+                    </span>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+
+    {# Fayl yuklash labeli uchun stil (CSS fayliga qo'shgan ma'qul) #}
+    <style>
+        .file-upload-label {
+            display: block;
+            padding: 1rem 1.5rem;
+            border: 2px dashed var(--border-color, #ced4da);
+            border-radius: var(--border-radius-md, 0.375rem);
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.2s ease, background-color 0.2s ease;
+            background-color: var(--bg-light, #f8f9fa);
+        }
+        .file-upload-label:hover {
+            border-color: var(--primary-brand, #0d6efd);
+            background-color: var(--bg-lighter, #e9ecef);
+        }
+        .file-upload-label i {
+            display: block;
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-light, #6c757d);
+        }
+        .file-upload-label span {
+            display: block;
+            font-weight: 500;
+            color: var(--text-medium, #495057);
+            margin-bottom: 0.3rem;
+            overflow: hidden;      /* Uzun fayl nomlari uchun */
+            text-overflow: ellipsis; /* ... qo'shish */
+            white-space: nowrap;    /* Sig'may qolsa qator tashlamaslik */
+        }
+        .file-upload-label small {
+            font-size: 0.8rem;
+            color: var(--text-light, #6c757d);
+            display: block;
+        }
+        /* Xatolik bo'lganda label stili */
+        .form-group.has-error .file-upload-label {
+            border-color: var(--accent-red, #dc3545);
+        }
+    </style>
+
+{% else %}
+    <div class="form-group error">
+        <p class="error-message">Shablon xatosi: 'field', 'input_id' yoki 'filename_id' o'zgaruvchisi topilmadi.</p>
+    </div>
+{% endif %}

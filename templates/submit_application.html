@@ -1,0 +1,348 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="main-content-wrapper">
+    <!-- Header -->
+    <header class="main-header">
+        <div class="header-left">
+           <button class="menu-toggle-btn" id="menu-toggle" title="Menyuni yig'ish/kengaytirish" aria-label="Menyu">
+               <i class="fa-solid fa-bars"></i>
+           </button>
+       </div>
+       <div class="header-right">
+            {# Profil rasmi (agar user kirgan bo'lsa) #}
+            {% if user.is_authenticated %}
+            <div class="profile-dropdown" title="Profil sozlamalari">
+            </div>
+            {% endif %}
+       </div>
+   </header>
+
+    <!-- Sahifa kontenti -->
+    <main class="page-content">
+         <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+             <h1 class="page-title" style="margin-bottom: 0;">Stipendiyaga Ariza Yuborish</h1>
+             <div id="selected-scholarship-info" style="text-align: right;">
+                 {% if scholarship %}
+                     <h2 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 5px;">Siz topshirayotgan stipendiya: {{ scholarship.name }}</h2>
+                     <p style="font-size: 0.9rem; color: var(--text-light);">Ta'minotchi: {{ scholarship.provider }}</p>
+                 {% else %}
+                      <h2 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 5px; color: var(--accent-red);">Stipendiya topilmadi yoki tanlanmagan</h2>
+                      <p style="font-size: 0.9rem; color: var(--text-light);">Iltimos, stipendiyani <a href="{% url 'find_scholarships' %}">qidiruv</a> sahifasida tanlang.</p>
+                 {% endif %}
+             </div>
+         </div>
+
+         {# Agar stipendiya va FORM obyektlari mavjud bo'lsa, formani ko'rsatish #}
+         {% if scholarship and form %} {# <-- 'and form' tekshiruvi qo'shildi #}
+            <div class="wizard-form-container animate-on-load">
+                <!-- Bosqichlar indikatori -->
+                <div class="wizard-steps" id="wizard-steps" style="--progress-width: 0%;">
+                    <div class="wizard-step active" data-step="1"><div class="wizard-step-number">1</div><div class="wizard-step-title">Shaxsiy ma'lumot</div></div>
+                    <div class="wizard-step" data-step="2"><div class="wizard-step-number">2</div><div class="wizard-step-title">Ta'lim</div></div>
+                    <div class="wizard-step" data-step="3"><div class="wizard-step-number">3</div><div class="wizard-step-title">Hujjatlar</div></div>
+                    <div class="wizard-step" data-step="4"><div class="wizard-step-number">4</div><div class="wizard-step-title">Tasdiqlash</div></div>
+                </div>
+
+                 {# Formadagi umumiy xatoliklarni ko'rsatish #}
+                 {% if form.non_field_errors %}
+                    <div class="form-errors alert alert-danger">
+                        {{ form.non_field_errors }}
+                    </div>
+                 {% endif %}
+
+                <form id="application-form" method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="scholarship_id" value="{{ scholarship.id }}">
+                    <input type="hidden" id="current-step-input" name="current_step" value="{{ current_step|default:1 }}">
+
+                    <div class="wizard-content">
+                        <!-- 1-bo'lim: Shaxsiy ma'lumot -->
+                        <div class="form-section active" data-section="1" > {# Boshida birinchi qadam ko'rinishi kerak #}
+                            <h3><i class="fa-regular fa-id-card"></i> 1-qadam: Shaxsiy ma'lumot</h3>
+                            <div class="form-grid">
+                                {% include 'includes/form_field.html' with field=form.applicant_full_name %}
+                                {% include 'includes/form_field.html' with field=form.applicant_birth_date %}
+                                {% include 'includes/form_field.html' with field=form.applicant_iin %}
+                                {% include 'includes/form_field.html' with field=form.applicant_phone %}
+                                {% include 'includes/form_field.html' with field=form.applicant_email %}
+                                <div class="form-group" style="grid-column: 1 / -1;">
+                                     {% include 'includes/form_field.html' with field=form.applicant_address %}
+                                </div>
+                            </div>
+                        </div>
+                        <!-- 2-bo'lim: Ta'lim -->
+                        <div class="form-section" data-section="2" style="display: none;">
+                            <h3><i class="fa-solid fa-user-graduate"></i> 2-qadam: Ta'lim va Tajriba</h3>
+                             <div class="form-grid">
+                                {% include 'includes/form_field.html' with field=form.university %}
+                                {% include 'includes/form_field.html' with field=form.faculty %}
+                                {% include 'includes/form_field.html' with field=form.course %}
+                                {% include 'includes/form_field.html' with field=form.gpa %}
+                                <div class="form-group" style="grid-column: 1 / -1;">
+                                    {% include 'includes/form_field.html' with field=form.achievements %}
+                                </div>
+                             </div>
+                        </div>
+                        <!-- 3-bo'lim: Hujjatlar -->
+                        <div class="form-section" data-section="3" style="display: none;">
+                            <h3><i class="fa-solid fa-folder-open"></i> 3-qadam: Hujjatlarni Yuklash</h3>
+                            <p style="margin-bottom: 25px; color: var(--text-medium);">Kerakli hujjatlarni yuklang.</p>
+                            <div class="form-grid">
+                                 {% include 'includes/file_upload_field.html' with field=form.doc_id_file input_id='doc-id-input' filename_id='doc-id-filename' %}
+                                 {% include 'includes/file_upload_field.html' with field=form.doc_transcript_file input_id='doc-transcript-input' filename_id='doc-transcript-filename' %}
+                                 {% include 'includes/file_upload_field.html' with field=form.doc_motivation_file input_id='doc-motivation-input' filename_id='doc-motivation-filename' %}
+                                 {% include 'includes/file_upload_field.html' with field=form.doc_recommendation_file input_id='doc-recommendation-input' filename_id='doc-recommendation-filename' %}
+                            </div>
+                             <div class="form-group" style="margin-top: 15px;">
+                                 {% include 'includes/form_field.html' with field=form.essay %}
+                             </div>
+                        </div>
+                        <!-- 4-bo'lim: Tasdiqlash -->
+                        <div class="form-section" data-section="4" style="display: none;">
+                            <h3><i class="fa-solid fa-check-double"></i> 4-qadam: Tekshirish va Tasdiqlash</h3>
+                            <p style="margin-bottom: 20px; font-size: 1.1rem; color: var(--text-medium);">Iltimos, yuborishdan oldin barcha ma'lumotlarni diqqat bilan tekshiring.</p>
+                            <div id="summary-section" style="background-color: #f8f9fa; padding: 20px; border-radius: var(--border-radius-lg); margin-bottom: 25px; border: 1px solid var(--border-color);">
+                                <h4 style="margin-bottom: 15px;">Ma'lumotlar xulosasi:</h4>
+                                <p><strong>Stipendiya:</strong> <span id="summary-scholarship-name">{{ scholarship.name }}</span></p>
+                                <p><strong>F.I.Sh.:</strong> <span id="summary-full-name"></span></p>
+                                <p><strong>Email:</strong> <span id="summary-email"></span></p>
+                                <p><strong>Universitet:</strong> <span id="summary-university"></span></p>
+                                <p><strong>Yuklangan fayllar soni:</strong> <span id="summary-files-count">0</span></p>
+                            </div>
+                             {# Checkboxlar #}
+                             <div class="form-group {% if form.confirm_accuracy.errors %}has-error{% endif %}" style="display: flex; align-items: center; gap: 10px;">
+                                 {{ form.confirm_accuracy }}
+                                 <label for="{{ form.confirm_accuracy.id_for_label }}" style="font-weight: 500; margin-bottom: 0;">{{ form.confirm_accuracy.label }} *</label>
+                                 {% for error in form.confirm_accuracy.errors %}<span class="error-message d-block">{{ error }}</span>{% endfor %}
+                             </div>
+                             <div class="form-group {% if form.confirm_terms.errors %}has-error{% endif %}" style="display: flex; align-items: center; gap: 10px;">
+                                 {{ form.confirm_terms }}
+                                  <label for="{{ form.confirm_terms.id_for_label }}" style="font-weight: 500; margin-bottom: 0;">
+                                      <a href="/privacy-policy/" target="_blank" style="color: var(--primary-brand);">Ma'lumotlarni qayta ishlash shartlariga</a> roziman. *
+                                  </label>
+                                  {% for error in form.confirm_terms.errors %}<span class="error-message d-block">{{ error }}</span>{% endfor %}
+                             </div>
+                        </div>
+                    </div>
+                    <div class="wizard-navigation">
+                        <button type="button" class="btn btn-secondary" id="prev-step-btn" disabled><i class="fa-solid fa-arrow-left"></i> Orqaga</button>
+                        <button type="button" class="btn btn-primary" id="next-step-btn">Oldinga <i class="fa-solid fa-arrow-right"></i></button>
+                        <button type="submit" class="btn btn-success" id="submit-btn" style="display: none;" disabled><i class="fa-solid fa-paper-plane"></i> Arizani Yuborish</button>
+                    </div>
+                </form>
+            </div>
+         {# Agar viewda 'form' bo'lmasa, xabar chiqarish #}
+         {% elif scholarship and not form %}
+              <div class="alert alert-warning">
+                  Formani yuklashda xatolik yuz berdi. Iltimos keyinroq urinib ko'ring yoki administratorga murojaat qiling.
+              </div>
+         {% endif %} {# End if scholarship and form #}
+    </main>
+    <!-- Footer -->
+</div>
+{% endblock content %}
+
+{% block extra_scripts %}
+{# Ko'p bosqichli forma uchun JS #}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- Elementlarni topish ---
+        const form = document.getElementById('application-form');
+        // Agar forma topilmasa, JS ishlamasin
+        if (!form) {
+            console.warn("Application form not found on this page.");
+            return;
+        }
+        const steps = document.querySelectorAll('.wizard-step');
+        const sections = document.querySelectorAll('.form-section');
+        const prevBtn = document.getElementById('prev-step-btn');
+        const nextBtn = document.getElementById('next-step-btn');
+        const submitBtn = document.getElementById('submit-btn');
+        const stepsContainer = document.getElementById('wizard-steps');
+        const currentStepInput = document.getElementById('current-step-input');
+        let currentStep = parseInt(currentStepInput.value) || 1;
+        const totalSteps = steps.length;
+        const scholarshipSelected = !!document.getElementById('selected-scholarship-info').querySelector('h2:not([style*="color: var(--accent-red)"])'); // Stipendiya tanlanganligini tekshirish
+
+        // --- Yordamchi Funksiyalar ---
+         function showToast(message, title = 'Bildirishnoma', type = 'info', duration = 5000) {
+             // Sizning Toast funksiyangiz
+              console.log(`[${type.toUpperCase()}] ${title}: ${message}`);
+               const messagesContainer = document.querySelector('.messages-container') || document.body;
+               const toast = document.createElement('div');
+               toast.className = `toast-message toast-${type}`;
+               toast.innerHTML = `<span>${message}</span><button type="button" class="btn-close-toast" onclick="this.parentElement.remove();">×</button>`;
+               messagesContainer.appendChild(toast);
+               setTimeout(() => {
+                   toast.style.transition = 'opacity 0.5s ease';
+                   toast.style.opacity = '0';
+                   setTimeout(() => toast.remove(), 500);
+               }, duration);
+         }
+
+         function clearValidationErrors(section) {
+             section.querySelectorAll('.form-group.has-error').forEach(fg => {
+                 fg.classList.remove('has-error');
+                 fg.querySelector('.error-message')?.remove();
+                 const input = fg.querySelector('input, select, textarea');
+                 if(input) input.style.borderColor = '';
+             });
+         }
+
+        // --- Asosiy Funksiyalar ---
+        function updateWizardState() {
+            steps.forEach(step => {
+                const stepNumber = parseInt(step.dataset.step);
+                step.classList.remove('active', 'completed');
+                if (stepNumber === currentStep) step.classList.add('active');
+                else if (stepNumber < currentStep) step.classList.add('completed');
+            });
+            sections.forEach(section => {
+                section.style.display = section.dataset.section == currentStep ? 'block' : 'none';
+                section.classList.toggle('active', section.dataset.section == currentStep);
+            });
+            prevBtn.disabled = currentStep === 1;
+            nextBtn.style.display = currentStep === totalSteps ? 'none' : 'inline-flex';
+            submitBtn.style.display = currentStep === totalSteps ? 'inline-flex' : 'none';
+
+            const confirmAccuracy = form.elements['confirm_accuracy']; // Nomi bo'yicha olish
+            const confirmTerms = form.elements['confirm_terms'];     // Nomi bo'yicha olish
+            submitBtn.disabled = !scholarshipSelected || (currentStep === totalSteps && (!confirmAccuracy?.checked || !confirmTerms?.checked));
+
+            const progressPercentage = totalSteps > 1 ? ((currentStep - 1) / (totalSteps - 1)) * 100 : 0;
+            if (stepsContainer) stepsContainer.style.setProperty('--progress-width', `${progressPercentage}%`);
+
+            if (currentStep === totalSteps) populateSummary();
+            currentStepInput.value = currentStep;
+        }
+
+        function validateStep(step) {
+            const currentSection = document.querySelector(`.form-section[data-section="${step}"]`);
+            if (!currentSection) return true;
+             clearValidationErrors(currentSection); // Oldingi xatolarni tozalash
+            const requiredInputs = currentSection.querySelectorAll('[required]');
+            let isValid = true;
+            let firstInvalidInput = null;
+
+            requiredInputs.forEach(input => {
+                const formGroup = input.closest('.form-group');
+                let currentInputValid = true;
+                 // Ko'rinmaydigan inputlarni validatsiya qilmaslik (agar yashiringan bo'lsa)
+                 // if (input.offsetParent === null && input.type !== 'hidden') return;
+
+                if (input.type === 'checkbox' && !input.checked) {
+                    currentInputValid = false;
+                } else if (input.tagName === 'SELECT' && !input.value) {
+                    currentInputValid = false;
+                } else if (input.type === 'file' && input.required && input.files.length === 0){
+                     currentInputValid = false;
+                } else if (!['checkbox', 'radio', 'file'].includes(input.type) && input.tagName !== 'SELECT' && !input.value.trim()) {
+                    currentInputValid = false;
+                } else if (input.pattern && !new RegExp(input.pattern).test(input.value)) {
+                    currentInputValid = false;
+                }
+
+                if (!currentInputValid) {
+                    isValid = false;
+                    if (!firstInvalidInput) firstInvalidInput = input;
+                    formGroup?.classList.add('has-error');
+                    input.style.borderColor = 'var(--accent-red)';
+                    const errorMsg = document.createElement('span');
+                    errorMsg.classList.add('error-message');
+                    errorMsg.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> ${input.title || 'Ushbu maydon toʻldirilishi shart.'}`;
+                    // Labeldan keyin yoki inputdan keyin qo'shish
+                    // input.insertAdjacentElement('afterend', errorMsg); // Bu ishonchliroq
+                    const label = formGroup?.querySelector('label[for="' + input.id + '"]');
+                    if(label) label.parentNode.insertBefore(errorMsg, label.nextSibling.nextSibling); // Label va inputdan keyin
+                    else input.parentNode.insertBefore(errorMsg, input.nextSibling);
+
+                }
+            });
+
+            if (!isValid && firstInvalidInput) {
+                firstInvalidInput.focus();
+            }
+            return isValid;
+        }
+
+        function populateSummary() {
+             try {
+                 document.getElementById('summary-full-name').textContent = form.elements['applicant_full_name']?.value || '-';
+                 document.getElementById('summary-email').textContent = form.elements['applicant_email']?.value || '-';
+                 document.getElementById('summary-university').textContent = form.elements['university']?.value || '-';
+                 let filesCount = 0;
+                 form.querySelectorAll('.actual-file-input').forEach(input => { if (input.files.length > 0) filesCount++; });
+                 document.getElementById('summary-files-count').textContent = filesCount;
+             } catch (e) { console.error("Error populating summary:", e); }
+         }
+
+        // --- Event Listenerlar ---
+        if (nextBtn) {
+            nextBtn.addEventListener('click', () => {
+                if (!scholarshipSelected) {
+                    showToast('Iltimos, avval stipendiyani tanlang.', 'Stipendiya tanlanmagan', 'warning');
+                    return;
+                }
+                if (!validateStep(currentStep)) {
+                    showToast('Iltimos, joriy qadamdagi barcha majburiy maydonlarni toʻldiring va xatoliklarni tuzating.', 'Validatsiya xatosi', 'error', 7000);
+                    return;
+                }
+                if (currentStep < totalSteps) {
+                    currentStep++;
+                    updateWizardState();
+                    window.scrollTo({ top: 0, behavior: 'smooth' }); // Tepaga silliq o'tish
+                }
+            });
+        }
+
+        if (prevBtn) {
+            prevBtn.addEventListener('click', () => {
+                if (currentStep > 1) {
+                    currentStep--;
+                     // Orqaga qaytganda validatsiya xatolarini tozalash (ixtiyoriy)
+                     const currentSection = document.querySelector(`.form-section[data-section="${currentStep}"]`);
+                     if(currentSection) clearValidationErrors(currentSection);
+                    updateWizardState();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            });
+        }
+
+        // Tasdiqlash checkboxlari
+        const confirmAccuracyCheckbox = form.elements['confirm_accuracy'];
+        const confirmTermsCheckbox = form.elements['confirm_terms'];
+        if (confirmAccuracyCheckbox && confirmTermsCheckbox) {
+            [confirmAccuracyCheckbox, confirmTermsCheckbox].forEach(checkbox => {
+                checkbox.addEventListener('change', () => {
+                    if (currentStep === totalSteps) updateWizardState();
+                });
+            });
+        }
+
+        // Fayl inputlari uchun (onchange endi inputning o'zida)
+        form.querySelectorAll('.actual-file-input').forEach(input => {
+             input.addEventListener('change', () => {
+                 // Validatsiya xatosini tozalash
+                  const formGroup = input.closest('.form-group');
+                  formGroup?.classList.remove('has-error');
+                  formGroup?.querySelector('.error-message')?.remove();
+                  input.style.borderColor = '';
+                  // Oxirgi qadamda bo'lsa, fayllar sonini yangilash
+                  if(currentStep === totalSteps) populateSummary();
+             });
+        });
+
+        // Boshlang'ich holat
+        if (scholarshipSelected && form) { // Forma va stipendiya mavjud bo'lsagina ishga tushirish
+            updateWizardState();
+        } else if (!scholarshipSelected) {
+            // Agar stipendiya tanlanmagan bo'lsa, navigatsiyani bloklash
+            if(nextBtn) nextBtn.disabled = true;
+            if(submitBtn) submitBtn.disabled = true;
+        }
+
+    });
+</script>
+{% endblock %}

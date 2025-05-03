@@ -1,0 +1,19 @@
+{# templates/includes/status_badge.html #}
+{% comment %}
+Context o'zgaruvchilari: status, status_display, element_id (ixtiyoriy)
+{% endcomment %}
+
+{% with element_id_str=element_id|stringformat:"s" %} {# ID ni stringga o'tkazish #}
+<span class="status-badge status-{{ status }}" {% if element_id %}id="status-badge-{{ element_id_str }}"{% endif %}>
+    <i class="fa-solid
+        {% if status == 'approved' %} fa-check-circle text-success"
+        {% elif status == 'rejected' %} fa-times-circle text-danger"
+        {% elif status == 'reviewing' %} fa-clock text-info"
+        {% elif status == 'clarification' %} fa-exclamation-circle text-warning"
+        {% elif status == 'withdrawn' %} fa-undo text-secondary"
+        {% else %} fa-paper-plane text-primary" {% endif %}>
+        {# Agar status noma'lum bo'lsa: fa-question-circle text-muted #}
+    </i>
+    {{ status_display|default:"Noma'lum" }}
+</span>
+{% endwith %}

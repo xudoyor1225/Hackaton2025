@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+<div class="main-content-wrapper">
+    <!-- Header -->
+     <header class="main-header">
+        <div class="header-left">
+           <button class="menu-toggle-btn" id="menu-toggle" title="Menyuni yig'ish/kengaytirish" aria-label="Menyu">
+               <i class="fa-solid fa-bars"></i>
+           </button>
+       </div>
+       <div class="header-right">
+       </div>
+   </header>
+
+    <!-- Sahifa kontenti -->
+    <main class="page-content">
+        <h1 class="page-title">Mening Arizalarim</h1>
+        <div class="animate-on-load">
+            <div class="card-table-wrapper">
+                <div class="table-header-controls">
+                    <h2 class="table-title">Mening yuborgan arizalarim roʻyxati</h2>
+                     <form method="get" class="table-filters"> {# Formaga o'rash #}
+                         <div class="table-search">
+                             <i class="fa-solid fa-magnifying-glass"></i>
+                             <input type="text" name="search" id="my-apps-search-input" placeholder="Stipendiya, status boʻyicha qidirish..." value="{{ request.GET.search|default:'' }}">
+                         </div>
+                         <div class="table-actions">
+                              <select name="status_filter" id="my-apps-status-filter" class="btn btn-secondary btn-sm" style="height: 38px;">
+                                  <option value="">Barcha statuslar</option>
+                                   {% for value, display in status_choices %}
+                                      {# Tarjima qilingan display nomlarini ishlatish kerak #}
+                                      <option value="{{ value }}" {% if request.GET.status_filter == value %}selected{% endif %}>{{ display }}</option>
+                                  {% endfor %}
+                              </select>
+                               <button type="submit" class="btn btn-light btn-sm"><i class="fa-solid fa-filter"></i> Filtr</button>
+                               <a href="{% url 'my_applications' %}" class="btn btn-secondary btn-sm"><i class="fa-solid fa-times"></i> Tozalash</a>
+                             <a href="{% url 'find_scholarships' %}" class="btn btn-primary btn-sm"><i class="fa-solid fa-plus"></i> Yangi ariza yuborish</a>
+                         </div>
+                     </form>
+                </div>
+                <div class="table-responsive">
+                    <table class="cool-table" id="my-applications-table">
+                        <thead>
+                            <tr>
+                                <th>Stipendiya</th>
+                                <th>Yuborilgan sana</th>
+                                <th>Yangilandi</th>
+                                <th>Status</th>
+                                <th>Harakatlar</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for app in page_obj %}
+                            <tr>
+                                <td>{{ app.scholarship.name }}</td>
+                                <td>{{ app.submission_date|date:"Y-m-d H:i" }}</td>
+                                <td>{{ app.last_updated|date:"Y-m-d H:i" }}</td>
+                                <td><span class="status-badge status-{{ app.status }}"><i class="fa-solid {% if app.status == 'approved' %}fa-check-circle{% elif app.status == 'rejected' %}fa-times-circle{% elif app.status == 'reviewing' %}fa-clock{% elif app.status == 'clarification' %}fa-exclamation-circle{% elif app.status == 'withdrawn' %}fa-undo{% else %}fa-paper-plane{% endif %}"></i> {{ app.get_status_display }}</span></td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="view-btn" title="Tafsilotlarni koʻrish" data-appid="{{ app.id }}"><i class="fa-solid fa-eye"></i></button>
+                                        {% if app.status == 'clarification' %}
+                                            {# Tahrirlash/aniqlashtirish uchun submit_application sahifasiga link #}
+                                            <a href="{% url 'submit_application' %}?application_id={{ app.id }}" class="edit-btn" title="Aniq­lash­tirishlar kiritish"><i class="fa-solid fa-pen"></i></a>
+                                        {% endif %}
+                                        {% if app.status == 'submitted' or app.status == 'clarification' %}
+                                            {# Arizani qaytarib olish (AJAX bo'lishi mumkin) #}
+                                            <button class="withdraw-btn" title="Arizani qaytarib olish" data-appid="{{ app.id }}"><i class="fa-solid fa-trash-can"></i></button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="5" style="text-align: center; padding: 40px 0;"><i class="fa-regular fa-folder-open" style="font-size: 1.5rem; display: block; margin-bottom: 10px;"></i>Siz hali ariza yubormagansiz yoki filtr boʻyicha topilmadi.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+             <!-- Ariza tafsilotlari (JS tomonidan boshqariladi) -->
+            <div id="application-details-section" style="display: none; margin-top: 30px; background-color: #f8f9fa; padding: 25px; border-radius: var(--border-radius-lg); border: 1px solid var(--border-color);">
+                 <h3 style="margin-bottom: 15px;">Ariza tafsilotlari #<span id="details-app-id"></span></h3>
+                 <p><strong>Stipendiya:</strong> <span id="details-scholarship"></span></p>
+                 <p><strong>Status:</strong> <span id="details-status-badge"></span></p>
+                 <p><strong>Yuborilgan sana:</strong> <span id="details-submit-date"></span></p>
+                 <p><strong>Oxirgi yangilanish:</strong> <span id="details-update-date"></span></p>
+                 <div id="details-notes-wrapper" style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed var(--border-color);">
+                    <strong>Ko'rib chiquvchi izohlari:</strong>
+                    <p id="details-notes" style="margin-top: 5px; color: var(--text-medium); white-space: pre-wrap;"></p> {# Izohlar formatini saqlash uchun #}
+                 </div>
+                 <button class="btn btn-secondary btn-sm" id="close-details-btn" style="margin-top: 20px;">Tafsilotlarni yopish</button>
+            </div>
+        </div>
+    </main>
+    <!-- Footer -->
+</div>
+{% endblock content %}
+
+{% block extra_scripts %}
+{# Tafsilotlarni ko'rsatish va qaytarib olish uchun JS #}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const detailsSection = document.getElementById('application-details-section');
+    const closeDetailsBtn = document.getElementById('close-details-btn');
+
+    // "Ko'rish" tugmalari
+    document.querySelectorAll('.view-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const appId = e.currentTarget.dataset.appid;
+            // TODO: AJAX orqali backenddan ariza tafsilotlarini olish
+            // Masalan: fetch(`/api/my-applications/${appId}/`)
+            // .then(...)
+            // .then(data => { ... ma'lumotlarni joylashtirish ... })
+             // --- DEMO uchun statik ma'lumot ---
+             document.getElementById('details-app-id').textContent = appId;
+             // Quyidagi ma'lumotlar AJAX javobidan kelishi kerak
+             document.getElementById('details-scholarship').textContent = "Demo Stipendiya Nomi";
+             document.getElementById('details-status-badge').innerHTML = '<span class="status-badge status-reviewing"><i class="fa-solid fa-clock"></i> Koʻrib chiqilmoqda</span>';
+             document.getElementById('details-submit-date').textContent = "2024-05-20 10:00";
+             document.getElementById('details-update-date').textContent = "2024-05-21 15:30";
+             document.getElementById('details-notes').textContent = "Hujjatlaringizni qayta tekshiring.\nImzo aniq emas.";
+             detailsSection.style.display = 'block';
+             detailsSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+             // --- DEMO tugadi ---
+        });
+    });
+
+     // Tafsilotlarni yopish
+    if (closeDetailsBtn) {
+        closeDetailsBtn.addEventListener('click', () => { detailsSection.style.display = 'none'; });
+    }
+
+    // "Qaytarib olish" tugmalari
+    document.querySelectorAll('.withdraw-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const button = e.currentTarget;
+            const appId = button.dataset.appid;
+            if (confirm('Haqiqatan ham bu arizani qaytarib olmoqchimisiz?')) {
+                 // TODO: AJAX orqali backendga POST so'rov yuborish
+                 // Masalan: fetch(`/api/my-applications/${appId}/withdraw/`, { method: 'POST', headers: {'X-CSRFToken': ...} })
+                 // .then(...)
+                 // .then(data => { ... muvaffaqiyatli bo'lsa qatorni o'chirish yoki statusni yangilash ... })
+
+                 // --- DEMO uchun ---
+                 showToast(`Ariza #${appId} qaytarib olindi (demo).`, 'Muvaffaqiyatli', 'warning');
+                 button.closest('tr')?.remove(); // Qatorni o'chirish
+                 // --- DEMO tugadi ---
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

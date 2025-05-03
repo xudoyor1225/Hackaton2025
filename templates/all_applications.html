@@ -1,0 +1,398 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_head %}
+{# Agar modal uchun alohida CSS bo'lsa #}
+{# <link rel="stylesheet" href="{% static 'css/modal_details.css' %}"> #}
+<style>
+    /* Tafsilotlar bo'limi uchun oddiy stil (agar kerak bo'lsa) */
+    #admin-application-details-section {
+        border: 1px solid #e0e0e0;
+        background-color: #f9f9f9;
+        padding: 25px;
+        border-radius: 8px;
+        margin-top: 30px;
+        display: none; /* Boshida yashirin */
+        transition: opacity 0.3s ease;
+    }
+     #admin-application-details-section.active {
+         display: block; /* JS aktiv qiladi */
+     }
+     /* Status badge uchun stillar (style.css da bo'lishi kerak) */
+     .status-badge { /* ... */ }
+     .status-submitted { /* ... */ }
+     .status-reviewing { /* ... */ }
+     .status-clarification { /* ... */ }
+     .status-approved { /* ... */ }
+     .status-rejected { /* ... */ }
+     .status-withdrawn { /* ... */ }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="main-content-wrapper">
+    <!-- Header -->
+    <header class="main-header">
+        <div class="header-left">
+           <button class="menu-toggle-btn" id="menu-toggle" title="Menyuni yig'ish/kengaytirish" aria-label="Menyu">
+               <i class="fa-solid fa-bars"></i>
+           </button>
+       </div>
+       <div class="header-right">
+           {% if user.is_authenticated %}
+           <div class="profile-dropdown" title="Profil sozlamalari">
+           </div>
+           {% endif %}
+       </div>
+   </header>
+
+    <!-- Sahifa kontenti -->
+    <main class="page-content">
+        <h1 class="page-title">Barcha Arizalar</h1>
+        <div class="animate-on-load">
+             <div class="card-table-wrapper">
+                <div class="table-header-controls">
+                    <h2 class="table-title">Stipendiya arizalari</h2>
+                     <form method="get" class="table-filters">
+                         <div class="table-search">
+                             <i class="fa-solid fa-magnifying-glass"></i>
+                             <input type="text" name="search" id="all-apps-search-input" placeholder="Ariza beruvchi, stipendiya, holat boʻyicha qidirish..." value="{{ request.GET.search|default:'' }}">
+                         </div>
+                         <div class="table-actions">
+                              <select name="status_filter" id="all-apps-status-filter" class="btn btn-secondary btn-sm" style="height: 38px;">
+                                  <option value="">Barcha holatlar</option>
+                                  {% for value, display in status_choices %}
+                                      <option value="{{ value }}" {% if request.GET.status_filter == value %}selected{% endif %}>{{ display }}</option>
+                                  {% endfor %}
+                              </select>
+                              <select name="scholarship_filter" id="all-apps-scholarship-filter" class="btn btn-secondary btn-sm" style="height: 38px;">
+                                  <option value="">Barcha stipendiyalar</option>
+                                  {% for sch in all_scholarships %}
+                                      <option value="{{ sch.id }}" {% if request.GET.scholarship_filter|stringformat:"s" == sch.id|stringformat:"s" %}selected{% endif %}>{{ sch.name }}</option>
+                                  {% endfor %}
+                              </select>
+                             <button type="submit" class="btn btn-light btn-sm"><i class="fa-solid fa-filter"></i> Filtr</button>
+                             <a href="{% url 'all_applications' %}" class="btn btn-secondary btn-sm"><i class="fa-solid fa-times"></i> Tozalash</a>
+                         </div>
+                     </form>
+                </div>
+                <div class="table-responsive">
+                    <table class="cool-table" id="all-applications-table">
+                        <thead>
+                            <tr>
+                                <th>Ariza beruvchi</th>
+                                <th>Stipendiya</th>
+                                <th>Yuborilgan sana</th>
+                                <th>Yangilangan sana</th>
+                                <th>Holati</th>
+                                <th>Amallar (Admin)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for app in page_obj %}
+                            <tr id="app-row-{{ app.id }}">
+                                <td>
+                                    <div class="applicant-info">
+                                        <div>
+                                            <span class="applicant-name">{{ app.applicant_full_name|default:app.applicant.get_full_name|default:app.applicant.username }}</span>
+                                            <span class="applicant-email">{{ app.applicant.email }}</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>{{ app.scholarship.name }}</td>
+                                <td>{{ app.submission_date|date:"Y-m-d H:i" }}</td>
+                                <td>{{ app.last_updated|date:"Y-m-d H:i" }}</td>
+                                <td>
+                                     {# Status badge #}
+                                </td>
+                                <td>
+                                    <div class="action-buttons">
+                                        {# Ko'rish tugmasi #}
+                                        <button type="button" class="view-btn" title="Ko'rish" data-appid="{{ app.id }}" data-url="{% url 'application_details_api' app.id %}">
+                                            <i class="fa-solid fa-eye"></i>
+                                        </button>
+                                        {# Boshqa tugmalar (agar kerak bo'lsa) #}
+                                    </div>
+                                </td>
+                            </tr>
+                           {% empty %}
+                               <tr>
+                                   <td colspan="6" style="text-align: center; padding: 40px 0;">Arizalar topilmadi.</td>
+                               </tr>
+                           {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                 {# Sahifalash bloki #}
+            </div>
+
+             <!-- ================== ARIZA TAFSILOTLARI BO'LIMI ================== -->
+             <div id="admin-application-details-section"> {# Style CSS faylida #}
+                 <button type="button" class="btn btn-secondary btn-sm" id="close-admin-details-btn" style="float: right; margin-bottom: 10px;">Yopish</button>
+                 <h3 style="margin-bottom: 15px;">Ariza tafsilotlari #<span id="admin-details-app-id"></span></h3>
+                 <div class="details-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+                     <p><strong>Ariza beruvchi:</strong> <span id="admin-details-applicant"></span></p>
+                     <p><strong>Stipendiya:</strong> <span id="admin-details-scholarship"></span></p>
+                     <p><strong>Yuborilgan:</strong> <span id="admin-details-submitted"></span></p>
+                     <p><strong>Yangilangan:</strong> <span id="admin-details-updated"></span></p>
+                     <p><strong>Holati:</strong> <span id="admin-details-status-badge"></span></p>
+                 </div>
+                 <div id="admin-details-notes-wrapper" style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed var(--border-color);">
+                    <strong>Tekshiruvchi izohlari:</strong>
+                    <pre id="admin-details-notes" style="margin-top: 5px; color: var(--text-medium); background-color: #eee; padding: 10px; border-radius: 4px; white-space: pre-wrap; word-wrap: break-word; max-height: 200px; overflow-y: auto;"></pre>
+                     {# Izoh qo'shish maydoni #}
+                     <div class="form-group">
+                         <label for="admin-new-note" style="font-weight: 600; margin-top: 15px;">Yangi izoh (ariza beruvchiga ko'rinadi):</label>
+                         <textarea id="admin-new-note" placeholder="Sabab yoki qo'shimcha ma'lumotni kiriting..." rows="3" style="width: 100%; margin-top: 5px; padding: 8px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color);"></textarea>
+                    </div>
+                 </div>
+                 <div style="margin-top: 15px;">
+                     <strong>Biriktirilgan hujjatlar:</strong>
+                     <ul id="admin-details-files" style="list-style: none; padding-left: 0; margin-top: 5px;">
+                         {# JS tomonidan to'ldiriladi #}
+                         <li><span class="text-muted">Yuklanmoqda...</span></li>
+                     </ul>
+                 </div>
+                 <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border-color); text-align: right;">
+                      {# Statusni o'zgartirish tugmalari #}
+                      <button type="button" class="btn btn-danger btn-sm admin-action-btn" data-action="rejected">
+                          <i class="fa-solid fa-times"></i> Rad etish
+                      </button>
+                      <button type="button" class="btn btn-warning btn-sm admin-action-btn" data-action="clarification" style="color: black;"> {# Sariq rang uchun #}
+                          <i class="fa-solid fa-question"></i> Aniqlashtirish
+                      </button>
+                     <button type="button" class="btn btn-success btn-sm admin-action-btn" data-action="approved">
+                         <i class="fa-solid fa-check"></i> Ma'qullash
+                     </button>
+                 </div>
+            </div>
+             <!-- ================== END ARIZA TAFSILOTLARI BO'LIMI ================== -->
+
+        </div>
+    </main>
+    <!-- Footer -->
+</div>
+{% endblock content %}
+
+{% block extra_scripts %}
+{# AJAX JS #}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const detailsSection = document.getElementById('admin-application-details-section');
+    const closeDetailsBtn = document.getElementById('close-admin-details-btn');
+    const detailsLoaderHTML = '<li><span class="text-muted"><i class="fa-solid fa-spinner fa-spin"></i> Yuklanmoqda...</span></li>';
+    let currentAppId = null; // Joriy ko'rilayotgan ariza IDsi
+
+    // --- Yordamchi Funksiyalar ---
+    function getCookie(name) { /* ... (avvalgi javobdagi kod) ... */
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+     function showToast(message, title = 'Bildirishnoma', type = 'info', duration = 5000) { /* ... (avvalgi javobdagi kod) ... */
+         console.log(`[${type.toUpperCase()}] ${title}: ${message}`);
+          const messagesContainer = document.querySelector('.messages-container') || document.body;
+          const toast = document.createElement('div');
+          toast.className = `toast-message toast-${type}`;
+          toast.innerHTML = `<span>${message}</span><button type="button" class="btn-close-toast" onclick="this.parentElement.remove();">×</button>`;
+          messagesContainer.appendChild(toast);
+          setTimeout(() => {
+              toast.style.transition = 'opacity 0.5s ease';
+              toast.style.opacity = '0';
+              setTimeout(() => toast.remove(), 500);
+          }, duration);
+     }
+
+    // --- Tafsilotlarni Ko'rish ---
+    document.querySelectorAll('.view-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            currentAppId = e.currentTarget.dataset.appid;
+            const url = e.currentTarget.dataset.url; // URLni tugmadan olish
+
+            // Eski ma'lumotlarni tozalash va yuklanishni ko'rsatish
+            document.getElementById('admin-details-app-id').textContent = currentAppId;
+            document.getElementById('admin-details-applicant').textContent = 'Yuklanmoqda...';
+            document.getElementById('admin-details-scholarship').textContent = 'Yuklanmoqda...';
+            document.getElementById('admin-details-submitted').textContent = '-';
+            document.getElementById('admin-details-updated').textContent = '-';
+            document.getElementById('admin-details-status-badge').innerHTML = '<span class="text-muted">...</span>';
+            document.getElementById('admin-details-notes').textContent = 'Yuklanmoqda...';
+            document.getElementById('admin-new-note').value = '';
+            document.getElementById('admin-details-files').innerHTML = detailsLoaderHTML;
+            detailsSection.classList.add('active'); // Bo'limni ko'rsatish
+            detailsSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+            fetch(url) // API URL manzili tugma data-url atributida
+                .then(response => {
+                    if (!response.ok) throw new Error(`HTTP xatolik! Status: ${response.status}`);
+                    return response.json();
+                })
+                .then(data => {
+                    // Olingan ma'lumotlar bilan maydonlarni to'ldirish
+                    document.getElementById('admin-details-applicant').textContent = `${data.applicant_name} (${data.applicant_email})`;
+                    document.getElementById('admin-details-scholarship').textContent = data.scholarship_name;
+                    document.getElementById('admin-details-submitted').textContent = data.submission_date || '-';
+                    document.getElementById('admin-details-updated').textContent = data.last_updated || '-';
+                    document.getElementById('admin-details-status-badge').innerHTML = data.status_badge_html || '<span class="text-danger">Noma\'lum</span>';
+                    document.getElementById('admin-details-notes').textContent = data.review_notes || 'Izohlar yoʻq.';
+
+                    const filesList = document.getElementById('admin-details-files');
+                    filesList.innerHTML = ''; // Yuklanishni olib tashlash
+                    if (data.documents && data.documents.length > 0) {
+                        data.documents.forEach(doc => {
+                            const li = document.createElement('li');
+                            // Fayl ikonkasini to'g'rilash
+                            let fileIcon = 'fa-file';
+                            if (doc.filename.endsWith('.pdf')) fileIcon = 'fa-file-pdf';
+                            else if (['.jpg', '.jpeg', '.png', '.gif'].some(ext => doc.filename.toLowerCase().endsWith(ext))) fileIcon = 'fa-file-image';
+                             else if (['.doc', '.docx'].some(ext => doc.filename.toLowerCase().endsWith(ext))) fileIcon = 'fa-file-word';
+
+                            li.innerHTML = `<a href="${doc.url}" target="_blank" class="btn btn-link btn-sm"><i class="fa-solid ${fileIcon} me-1"></i> ${doc.type_display} (${doc.filename})</a>`;
+                            filesList.appendChild(li);
+                        });
+                    } else {
+                        filesList.innerHTML = '<li>Biriktirilgan hujjatlar yoʻq.</li>';
+                    }
+                })
+                .catch(error => {
+                    console.error("Error fetching application details:", error);
+                    showToast('Ariza maʼlumotlarini olishda xatolik.', 'Xatolik', 'error');
+                    // Xatolik yuz berganda ba'zi maydonlarni tozalash
+                    document.getElementById('admin-details-applicant').textContent = 'Xatolik';
+                    document.getElementById('admin-details-scholarship').textContent = '-';
+                    document.getElementById('admin-details-notes').textContent = 'Maʼlumot yuklanmadi.';
+                    document.getElementById('admin-details-files').innerHTML = '<li>Xatolik</li>';
+                });
+        });
+    });
+
+    // --- Tafsilotlarni Yopish ---
+    if (closeDetailsBtn) {
+        closeDetailsBtn.addEventListener('click', () => {
+            detailsSection.classList.remove('active'); // Yashirish
+            currentAppId = null;
+        });
+    }
+
+    // --- Statusni O'zgartirish ---
+    document.querySelectorAll('.admin-action-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            if (!currentAppId) {
+                showToast('Iltimos, avval ariza tafsilotlarini oching.', 'Xatolik', 'warning');
+                return;
+            }
+            const action = e.currentTarget.dataset.action;
+            const newNote = document.getElementById('admin-new-note').value.trim();
+            const apiUrl = `/api/applications/${currentAppId}/change-status/`; // API URL
+            const csrfToken = getCookie('csrftoken');
+
+            // Agar "Aniqlashtirish" yoki "Rad etish" bo'lsa va izoh bo'sh bo'lsa, tasdiqlash so'rash
+            if (['rejected', 'clarification'].includes(action) && !newNote) {
+                if (!confirm('Siz izoh qoldirmadingiz. Haqiqatan ham davom etmoqchimisiz?')) {
+                    document.getElementById('admin-new-note').focus();
+                    return;
+                }
+            }
+
+            const button = e.currentTarget;
+            button.disabled = true;
+            const originalHtml = button.innerHTML;
+            button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Kutmoqda...';
+
+            fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ status: action, notes: newNote })
+            })
+            .then(response => {
+                 // Javobni tekshirish
+                 if (!response.ok) {
+                     return response.json().catch(() => response.text()).then(err => {
+                         throw new Error(JSON.stringify(err) || `HTTP xatolik! Status: ${response.status}`);
+                     });
+                 }
+                 return response.json();
+             })
+            .then(data => {
+                if (data.success) {
+                    showToast(`Ariza holati "${data.new_status_display}" ga o'zgartirildi.`, 'Muvaffaqiyatli', 'success');
+                    // Jadvaldagi statusni yangilash (HTML backenddan kelishi kerak)
+                    const tableStatusBadgeContainer = document.querySelector(`#app-row-${currentAppId} td:nth-child(5)`); // 5-ustun
+                    if (tableStatusBadgeContainer && data.status_badge_html) {
+                         // Eski badgeni topib o'chirish va yangisini qo'shish
+                         const oldBadge = document.getElementById(`status-badge-${currentAppId}`);
+                         if(oldBadge) oldBadge.outerHTML = data.status_badge_html; // ID ni ham o'zgartirish kerak
+                         else tableStatusBadgeContainer.innerHTML = data.status_badge_html; // Agar ID bo'lmasa
+                         // Yangi badgening ID sini ham to'g'rilash
+                         const newBadge = tableStatusBadgeContainer.querySelector('.status-badge');
+                         if(newBadge) newBadge.id = `status-badge-${currentAppId}`;
+
+                    } else {
+                         console.warn("Could not update status badge in the table dynamically.");
+                         // Sahifani yangilash mumkin
+                         // window.location.reload();
+                    }
+                    detailsSection.classList.remove('active'); // Tafsilotlarni yopish
+                    currentAppId = null;
+                } else {
+                    showToast(data.error || 'Statusni oʻzgartirishda nomaʼlum xatolik.', 'Xatolik', 'error');
+                }
+            })
+            .catch(error => {
+                console.error("Error changing status:", error);
+                let errorMessage = 'Server bilan bogʻlanishda yoki statusni oʻzgartirishda xatolik.';
+                 try { const errorObj = JSON.parse(error.message); if(errorObj && errorObj.error) errorMessage = errorObj.error; else if (errorObj && typeof errorObj === 'string') errorMessage = errorObj; } catch(e) {}
+                 showToast(errorMessage, 'Xatolik', 'error');
+            })
+            .finally(() => {
+                // Tugmani asl holiga qaytarish
+                button.disabled = false;
+                button.innerHTML = originalHtml;
+            });
+        });
+    });
+
+});
+</script>
+{% endblock %}
+
+{# ================= YORDAMCHI SHABLON ================= #}
+{# templates/includes/status_badge.html #}
+{# Bu faylni yaratib, quyidagi kodni joylashtiring #}
+{% comment %}
+{% with element_id_str=element_id|stringformat:"s" %} {# ID ni stringga o'tkazish #}
+<span class="status-badge status-{{ status }}" {% if element_id %}id="status-badge-{{ element_id_str }}"{% endif %}>
+    <i class="fa-solid
+        {% if status == 'approved' %}fa-check-circle text-success"{% elif status == 'rejected' %}fa-times-circle text-danger"{% elif status == 'reviewing' %}fa-clock text-info"{% elif status == 'clarification' %}fa-exclamation-circle text-warning"{% elif status == 'withdrawn' %}fa-undo text-secondary"{% else %}fa-paper-plane text-primary"{% endif %}>
+    </i>
+    {{ status_display }}
+</span>
+{% endwith %}
+{% endcomment %}
+
+{# Yuqoridagi status_badge.html o'rniga to'g'ridan-to'g'ri HTML (isbotlangan) #}
+<span class="status-badge status-{{ app.status }}" id="status-badge-{{ app.id }}">
+    <i class="fa-solid
+        {% if app.status == 'approved' %} fa-check-circle text-success"
+        {% elif app.status == 'rejected' %} fa-times-circle text-danger"
+        {% elif app.status == 'reviewing' %} fa-clock text-info"
+        {% elif app.status == 'clarification' %} fa-exclamation-circle text-warning"
+        {% elif app.status == 'withdrawn' %} fa-undo text-secondary"
+        {% else %} fa-paper-plane text-primary" {% endif %}>
+    </i>
+    {{ app.get_status_display }}
+</span>

@@ -1,0 +1,85 @@
+{% extends 'base_auth.html' %}
+{% load static %}
+
+{% block title %}Roʻyxatdan oʻtish | Shaffof Imkoniyat{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+         <div class="auth-logo">
+             <i class="fa-solid fa-user-plus fa-2x" style="color: var(--primary-brand);"></i>
+             <h1 style="margin-top: 10px; font-size: 1.8rem;">Shaffof Imkoniyat</h1>
+        </div>
+        <h2>Roʻyxatdan oʻtish</h2>
+        <p>Yangi hisob yaratish uchun ma'lumotlarni toʻldiring.</p>
+
+        {# Umumiy xatoliklar va xabarlar #}
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+                {% for error in form.non_field_errors %}
+                    <p>{{ error }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+        {# Viewdan kelgan xabarlarni ham ko'rsatish mumkin (yuqoridagi base_auth dagi messages yetarli bo'lishi ham mumkin) #}
+        {# {% if messages %}...{% endif %} #}
+
+        <form method="post" action="{% url 'register' %}">
+            {% csrf_token %}
+
+            {# Formani maydonma-maydon render qilish #}
+            <div class="form-group {% if form.first_name.errors %}has-error{% endif %}">
+                <label for="{{ form.first_name.id_for_label }}">{{ form.first_name.label }}*</label>
+                {{ form.first_name }}
+                {% for error in form.first_name.errors %}<span class="error-message">{{ error }}</span>{% endfor %}
+            </div>
+            <div class="form-group {% if form.last_name.errors %}has-error{% endif %}">
+                <label for="{{ form.last_name.id_for_label }}">{{ form.last_name.label }}*</label>
+                {{ form.last_name }}
+                {% for error in form.last_name.errors %}<span class="error-message">{{ error }}</span>{% endfor %}
+            </div>
+             <div class="form-group {% if form.email.errors %}has-error{% endif %}">
+                <label for="{{ form.email.id_for_label }}">{{ form.email.label }}*</label>
+                {{ form.email }}
+                {% for error in form.email.errors %}<span class="error-message">{{ error }}</span>{% endfor %}
+            </div>
+             <div class="form-group {% if form.username.errors %}has-error{% endif %}">
+                <label for="{{ form.username.id_for_label }}">{{ form.username.label }}*</label>
+                {{ form.username }}
+                 {% if form.username.help_text %}
+                     <small class="input-hint">{{ form.username.help_text|safe }}</small>
+                 {% endif %}
+                {% for error in form.username.errors %}<span class="error-message">{{ error }}</span>{% endfor %}
+            </div>
+             <div class="form-group {% if form.password1.errors %}has-error{% endif %}">
+                <label for="{{ form.password1.id_for_label }}">Parol*</label> {# Labelni o'zgartirdim #}
+                {{ form.password1 }}
+                 {% if form.password1.help_text %}
+                     <small class="input-hint">{{ form.password1.help_text|safe }}</small>
+                 {% endif %}
+                {% for error in form.password1.errors %}<span class="error-message">{{ error }}</span>{% endfor %}
+            </div>
+             <div class="form-group {% if form.password2.errors %}has-error{% endif %}">
+                <label for="{{ form.password2.id_for_label }}">Parolni tasdiqlang*</label> {# Labelni o'zgartirdim #}
+                {{ form.password2 }}
+                {% for error in form.password2.errors %}<span class="error-message">{{ error }}</span>{% endfor %}
+            </div>
+
+            {# Shartlarga rozilik (agar formaga qo'shilgan bo'lsa) #}
+            {# <div class="form-group form-check {% if form.agree_terms.errors %}has-error{% endif %}">
+                 {{ form.agree_terms }}
+                 <label class="form-check-label" for="{{ form.agree_terms.id_for_label }}">
+                     {{ form.agree_terms.label|safe }}* {# safe filtri linkni ko'rsatish uchun #}
+                 </label>
+                 {% for error in form.agree_terms.errors %}<span class="error-message">{{ error }}</span>{% endfor %}
+            </div> #}
+
+            <button type="submit" class="btn btn-primary btn-block">Roʻyxatdan oʻtish</button>
+        </form>
+
+        <div class="auth-switch">
+            Hisobingiz bormi? <a href="{% url 'login' %}">Kirish</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

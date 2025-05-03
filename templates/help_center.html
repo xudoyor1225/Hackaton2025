@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+<div class="main-content-wrapper">
+    <!-- Header -->
+     <header class="main-header">
+        <div class="header-left">
+            <button class="menu-toggle-btn" id="menu-toggle" title="Menyuni yig'ish/kengaytirish" aria-label="Menyu">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+        </div>
+        <div class="header-right">
+            <div class="profile-dropdown" title="Profil sozlamalari">
+            </div>
+        </div>
+    </header>
+
+    <!-- Sahifa kontenti -->
+    <main class="page-content">
+        <!-- Yordam markazi banneri -->
+        <div class="help-search-banner animate-on-load">
+             <h1>Yordam Markazi</h1>
+             <p>Savollaringizga javob toping yoki qoʻllab-quvvatlash xizmati bilan bogʻlaning.</p>
+             <form method="get" class="search-bar"> {# Formaga o'rash #}
+                 <i class="fa-solid fa-magnifying-glass"></i>
+                 <input type="text" name="search" id="help-search-input" placeholder="Savolingizni yoki kalit soʻzni kiriting..." value="{{ search_query }}">
+                 <button type="submit" style="display: none;">Qidir</button> {# Enter bosganda ishlashi uchun #}
+             </form>
+         </div>
+         <div class="animate-on-load" style="animation-delay: 0.2s;">
+             <!-- FAQ bo'limi -->
+             <section class="faq-section">
+                 <h2><i class="fa-regular fa-comments"></i> Tez-tez Beriladigan Savollar (FAQ)</h2>
+                 <div class="accordion" id="faq-accordion">
+                      {% for item in faq_items %}
+                         <div class="accordion-item">
+                              <div class="accordion-header" role="button" tabindex="0" aria-expanded="false" aria-controls="content-{{ forloop.counter }}" id="header-{{ forloop.counter }}">
+                                  <span>{{ item.question }}</span>
+                                  <i class="fa-solid fa-chevron-down"></i>
+                              </div>
+                              <div class="accordion-content" id="content-{{ forloop.counter }}" role="region" aria-labelledby="header-{{ forloop.counter }}">
+                                  <div class="accordion-content-inner">
+                                      {{ item.answer|safe }} {# Javobda HTML bo'lishi mumkin #}
+                                  </div>
+                              </div>
+                          </div>
+                      {% empty %}
+                          <p style="text-align: center; color: var(--text-light); padding: 30px 0;">
+                              {% if search_query %}
+                                  Sizning soʻrovingiz boʻyicha hech narsa topilmadi.
+                              {% else %}
+                                  Hozircha savol-javoblar mavjud emas.
+                              {% endif %}
+                          </p>
+                      {% endfor %}
+                 </div>
+             </section>
+             <!-- Qo'llab-quvvatlash xizmati -->
+             <section class="contact-support-section">
+                 <h2 style="text-align: center; font-size: 1.8rem; margin-bottom: 30px;"><i class="fa-solid fa-headset"></i> Javob topmadingizmi?</h2>
+                 <div class="contact-support-card">
+                     <i class="fa-solid fa-envelope-open-text"></i>
+                     <h3>Biz bilan bogʻlaning</h3>
+                     <p>Qoʻllab-quvvatlash xizmatimiz har qanday savolingizga yordam berishga tayyor.</p>
+                     <a href="mailto:support@shaffofimkoniyat.uz" class="btn btn-primary"><i class="fa-solid fa-envelope"></i> Qoʻllab-quvvatlashga yozish</a>
+                 </div>
+             </section>
+         </div>
+    </main>
+    <!-- Footer -->
+</div>
+{% endblock content %}
+
+{% block extra_scripts %}
+{# Akkordeon uchun JS (agar script.js da bo'lmasa) #}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const accordionHeaders = document.querySelectorAll('.accordion-header');
+    accordionHeaders.forEach(header => {
+        header.addEventListener('click', toggleAccordionItem);
+        header.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                toggleAccordionItem.call(header, e);
+            }
+        });
+    });
+    function toggleAccordionItem() {
+        const item = this.closest('.accordion-item');
+        if (!item) return;
+        const content = item.querySelector('.accordion-content');
+        const isExpanded = this.getAttribute('aria-expanded') === 'true';
+
+        // Boshqa ochiq elementlarni yopish (ixtiyoriy)
+        // this.closest('.accordion').querySelectorAll('.accordion-item.active').forEach(openItem => {
+        //     if (openItem !== item) {
+        //         openItem.classList.remove('active');
+        //         openItem.querySelector('.accordion-header').setAttribute('aria-expanded', 'false');
+        //         openItem.querySelector('.accordion-content').style.maxHeight = null;
+        //     }
+        // });
+
+        if (isExpanded) {
+            content.style.maxHeight = null;
+            this.setAttribute('aria-expanded', 'false');
+            item.classList.remove('active');
+        } else {
+            item.classList.add('active');
+            this.setAttribute('aria-expanded', 'true');
+            content.style.maxHeight = content.scrollHeight + "px";
+        }
+    }
+});
+</script>
+{% endblock %}

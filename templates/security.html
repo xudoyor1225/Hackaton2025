@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="main-content-wrapper">
+    <!-- Header -->
+     <header class="main-header">
+        <div class="header-left">
+           <button class="menu-toggle-btn" id="menu-toggle" title="Menyuni yig'ish/kengaytirish" aria-label="Menyu">
+               <i class="fa-solid fa-bars"></i>
+           </button>
+       </div>
+       <div class="header-right">
+            <div class="profile-dropdown" title="Profil sozlamalari">
+            </div>
+       </div>
+   </header>
+
+    <!-- Sahifa kontenti -->
+    <main class="page-content">
+        <h1 class="page-title">Xavfsizlik Sozlamalari</h1>
+         <div class="animate-on-load">
+             <div class="settings-container">
+                 <section class="settings-content" style="flex: 1;">
+                     <!-- Parolni o'zgartirish bo'limi -->
+                     <div class="settings-section" id="change-password">
+                         <h2><i class="fa-solid fa-key"></i> Parolni Oʻzgartirish</h2>
+                         {# Agar xatoliklar bo'lsa ko'rsatish #}
+                         {% if password_form.non_field_errors %}
+                            <div class="form-errors alert alert-danger">
+                                {{ password_form.non_field_errors }}
+                            </div>
+                         {% endif %}
+                         <form method="post" id="password-change-form">
+                              {% csrf_token %}
+                              <div class="form-grid">
+                                 {# Parol formasini maydonma-maydon render qilish #}
+                                 {% include 'includes/form_field.html' with field=password_form.old_password %}
+                                 {% include 'includes/form_field.html' with field=password_form.new_password1 %}
+                                 {% include 'includes/form_field.html' with field=password_form.new_password2 %}
+                             </div>
+                             <div style="text-align: right; margin-top: 20px;">
+                                 <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Parolni oʻzgartirish</button>
+                             </div>
+                         </form>
+                     </div>
+
+                     <!-- Ikki faktorli autentifikatsiya (2FA) bo'limi -->
+                     {# 2FA uchun backend logikasi va kontekst kerak (is_2fa_enabled) #}
+                     <div class="settings-section" id="two-factor">
+                         <h2><i class="fa-solid fa-mobile-screen-button"></i> Ikki Faktorli Autentifikatsiya (2FA)</h2>
+                         <div id="2fa-status" style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px; padding: 15px; background-color: #f8f9fa; border-radius: var(--border-radius-md); border: 1px solid var(--border-color);">
+                             {# Backenddan kelgan `is_2fa_enabled` ga qarab ko'rsatish #}
+                             {# {% if is_2fa_enabled %} ... {% else %} ... {% endif %} #}
+                             {# Hozircha JS boshqaradi deb hisoblaymiz #}
+                             <i id="2fa-icon" class="fa-solid fa-shield-slash fa-2x" style="color: var(--accent-red);"></i>
+                             <div>
+                                 <strong id="2fa-status-text">2FA oʻchirilgan</strong>
+                                 <p id="2fa-description" style="font-size: 0.9rem; color: var(--text-medium);">Qoʻshimcha himoya uchun 2FA ni yoqing.</p>
+                             </div>
+                             <button class="btn btn-success btn-sm" id="enable-2fa-btn" style="margin-left: auto;">2FA ni Yoqish</button>
+                             <button class="btn btn-danger btn-sm" id="disable-2fa-btn" style="margin-left: auto; display: none;">2FA ni Oʻchirish</button>
+                         </div>
+                         {# 2FA sozlash bloki (JS tomonidan boshqariladi) #}
+                         <div id="2fa-setup" style="display: none; margin-top: 20px;">
+                             <p>Autentifikatsiya ilovasi yordamida QR kodni skanerlang va kodni kiriting:</p>
+                             <div style="display: flex; gap: 20px; align-items: center; margin-top: 15px; flex-wrap: wrap;">
+                                 <img id="qr-code-image" src="{% static 'images/placeholder_qr.png' %}" alt="2FA uchun QR kod" style="border: 1px solid var(--border-color); width: 150px; height: 150px;">
+                                 <div class="form-group" style="flex-grow: 1; min-width: 200px;">
+                                     <label for="2fa-code">Tasdiqlash kodi *</label>
+                                     <input type="text" id="2fa-code" name="2fa_code" pattern="\d{6}" required placeholder="123456" style="font-size: 1.2rem; text-align: center; letter-spacing: 5px;">
+                                     <button type="button" class="btn btn-primary" id="verify-2fa-btn" style="margin-top: 10px;">Tasdiqlash</button>
+                                 </div>
+                             </div>
+                         </div>
+                     </div>
+
+                      <!-- Faol sessiyalar bo'limi -->
+                     {# Sessiyalar backenddan kelishi kerak (active_sessions) #}
+                     <div class="settings-section" id="active-sessions">
+                         <h2><i class="fa-solid fa-desktop"></i> Faol Sessiyalar</h2>
+                         <p style="color: var(--text-medium); margin-bottom: 20px;">Hisobingizga kirilgan qurilmalar.</p>
+                         <ul id="session-list" style="list-style: none; padding: 0;">
+                             {# {% for session in active_sessions %} ... {% empty %} ... {% endfor %} #}
+                             {# Hozircha JS boshqaradi deb hisoblaymiz #}
+                             <li class="session-item-placeholder" style="padding: 15px 0; border-bottom: 1px solid var(--border-color); color: var(--text-light);">Sessiyalar yuklanmoqda...</li>
+                         </ul>
+                          <div style="text-align: right; margin-top: 20px;">
+                              {# Bu tugma uchun alohida URL va view kerak #}
+                              <button type="button" class="btn btn-danger btn-sm" id="logout-all-btn"><i class="fa-solid fa-power-off"></i> Barcha boshqa sessiyalarni tugatish</button>
+                          </div>
+                     </div>
+                 </section>
+             </div>
+         </div>
+    </main>
+    <!-- Footer -->
+</div>
+{% endblock content %}
+
+{% block extra_scripts %}
+{# 2FA va Sessiyalar uchun JS kod #}
+<script>
+    // ... (security.html uchun JS kodini oldingi javobdan oling) ...
+    // Bu JS backend API endpointlari bilan ishlashi kerak bo'ladi (2FA yoqish/o'chirish, QR kod olish, sessiyalarni olish/tugatish)
+</script>
+{% endblock %}

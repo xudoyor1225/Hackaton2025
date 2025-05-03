@@ -1,0 +1,41 @@
+{# templates/includes/form_fields.html #}
+{# =================================================================== #}
+{#             Yordamchi Shablon: Formaning Barcha Maydonlarini        #}
+{#                       Render Qilish (Modal uchun)                   #}
+{# =================================================================== #}
+{# Maqsad: Formadagi barcha ko'rinadigan maydonlarni 'form_field.html' #}
+{#         yordamida chiqarish.                                       #}
+{#                                                                     #}
+{# Qanday ishlatiladi:                                                 #}
+{# {% include 'includes/form_fields.html' with form=your_form_object %} #}
+{#                                                                     #}
+{# Kerakli kontekst o'zgaruvchisi:                                     #}
+{#   - form: Render qilinishi kerak bo'lgan Django forma obyekti       #}
+{# =================================================================== #}
+
+{% if form %}
+    {# Formadagi umumiy xatoliklarni ko'rsatish (agar mavjud bo'lsa) #}
+    {% if form.non_field_errors %}
+        <div class="form-errors alert alert-danger">
+            {{ form.non_field_errors }}
+        </div>
+    {% endif %}
+
+    {# Formadagi har bir ko'rinadigan maydon uchun ('visible_fields' ishlatiladi) #}
+    {% for field in form.visible_fields %}
+        {# Alohida maydonni render qilish uchun boshqa include'ni chaqirish #}
+        {# Bu yerda 'form_field.html' (birlikda) ishlatiladi #}
+        {% include 'includes/form_field.html' with field=field %}
+    {% endfor %}
+
+    {# Formadagi yashirin maydonlarni ham chiqarish kerak bo'lishi mumkin (lekin odatda shart emas) #}
+    {# {% for hidden in form.hidden_fields %}
+        {{ hidden }}
+    {% endfor %} #}
+
+{% else %}
+    {# Agar 'form' o'zgaruvchisi uzatilmagan bo'lsa #}
+    <div class="form-group error">
+        <p class="error-message">Shablon xatosi: 'includes/form_fields.html' chaqiruvida 'form' o'zgaruvchisi topilmadi.</p>
+    </div>
+{% endif %}

@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+<div class="main-content-wrapper">
+    <!-- Header (Minimal) -->
+     <header class="main-header">
+        <div class="header-left">
+           <button class="menu-toggle-btn" id="menu-toggle" title="Menyuni yig'ish/kengaytirish" aria-label="Menyu">
+               <i class="fa-solid fa-bars"></i>
+           </button>
+       </div>
+       <div class="header-right">
+       </div>
+   </header>
+    <!-- Sahifa kontenti -->
+    <main class="page-content">
+        <h1 class="page-title">Tahlil va Hisobotlar</h1>
+        <div class="animate-on-load">
+             <!-- Sana filtrlari -->
+             <div class="card-table-wrapper" style="padding: 20px; margin-bottom: 30px;">
+                 <form method="get">
+                     <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                         <span style="font-weight: 600;">Hisobot davri:</span>
+                         <input type="date" id="date-start" name="date_start" class="btn btn-secondary btn-sm" style="height: 38px;" value="{{ date_start }}">
+                         <span>-</span>
+                         <input type="date" id="date-end" name="date_end" class="btn btn-secondary btn-sm" style="height: 38px;" value="{{ date_end }}">
+                         <button type="submit" class="btn btn-primary btn-sm" id="apply-date-filter"><i class="fa-solid fa-check"></i> Qoʻllash</button>
+                     </div>
+                 </form>
+             </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 30px;">
+                 <!-- Grafik 1: Ariza holatlari -->
+                 <div class="chart-wrapper">
+                     <div class="chart-header"><h3>Ariza Holatlari ({{ date_start }} - {{ date_end }})</h3></div>
+                     <div class="chart-container" style="height: 350px;">
+                         <canvas id="chartStatus"></canvas>
+                     </div>
+                 </div>
+                 <!-- Grafik 2: Ariza topshirish dinamikasi -->
+                 <div class="chart-wrapper">
+                     <div class="chart-header"> <h3>Arizalar Dinamikasi ({{ date_start }} - {{ date_end }})</h3> </div>
+                     <div class="chart-container" style="height: 350px;">
+                         <canvas id="chartTrend"></canvas>
+                     </div>
+                 </div>
+                 <!-- Grafik 3: Stipendiya turi bo'yicha ma'qullanish % -->
+                  <div class="chart-wrapper">
+                     <div class="chart-header"><h3>Stipendiya Turi Boʻyicha Maʼqullanish %</h3></div>
+                     <div class="chart-container" style="height: 350px;">
+                         <canvas id="chartSuccessRate"></canvas> {# Ma'lumotlarni tayyorlash kerak #}
+                     </div>
+                 </div>
+                 <!-- Grafik 4: Foydalanuvchilarning rollar bo'yicha -->
+                 <div class="chart-wrapper">
+                     <div class="chart-header"><h3>Foydalanuvchilarning Rollar Boʻyicha Taqsimlanishi</h3></div>
+                     <div class="chart-container" style="height: 350px;">
+                         <canvas id="chartUserRoles"></canvas>
+                     </div>
+                 </div>
+                 <!-- Qo'shimcha KPI kartochkalari -->
+                 <div class="stat-card" style="background: linear-gradient(135deg, #38BDF8, #6366F1); color: white;">
+                    <div class="stat-card-header">
+                        <div class="stat-card-icon-wrapper" style="background: rgba(255,255,255,0.2);"><i class="fa-solid fa-users"></i></div>
+                        <div class="stat-card-title" style="color: rgba(255,255,255,0.8);">Yangi foydalanuvchilar (davr boʻyicha)</div>
+                    </div>
+                    <div class="stat-card-value" data-target="{{ kpi_new_users|default:0 }}" style="color: white;">0</div>
+                    <div class="stat-card-footer" style="color: rgba(255,255,255,0.9);">
+                        {# O'tgan davrga nisbatan foiz qo'shilishi kerak #}
+                        <span class="stat-period">{{ date_start }} - {{ date_end }}</span>
+                    </div>
+                 </div>
+                  <div class="stat-card" style="background: linear-gradient(135deg, #F59E0B, #EF4444); color: white;">
+                    <div class="stat-card-header">
+                        <div class="stat-card-icon-wrapper" style="background: rgba(255,255,255,0.2);"><i class="fa-solid fa-stopwatch"></i></div>
+                        <div class="stat-card-title" style="color: rgba(255,255,255,0.8);">Oʻrtacha koʻrib chiqish vaqti</div>
+                    </div>
+                    <div class="stat-card-value" data-target="{{ kpi_avg_review_days|default:0 }}" style="color: white;">0 kun</div>
+                    <div class="stat-card-footer" style="color: rgba(255,255,255,0.9);">
+                         {# O'tgan davrga nisbatan farq qo'shilishi kerak #}
+                        <span class="stat-period">{{ date_start }} - {{ date_end }} davrida</span>
+                    </div>
+                 </div>
+            </div>
+        </div>
+    </main>
+    <!-- Footer -->
+</div>
+{% endblock content %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Grafik 1: Holatlar
+    const ctxStatus = document.getElementById('chartStatus');
+    if (ctxStatus && typeof initApplicationsStatusChart === 'function') {
+        initApplicationsStatusChart(ctxStatus, {
+            labels: {{ status_chart.labels|safe }},
+            data: {{ status_chart.data|safe }}
+        });
+    }
+    // Grafik 2: Dinamika
+    const ctxTrend = document.getElementById('chartTrend');
+    if (ctxTrend && typeof initApplicationsTrendChart === 'function') {
+        initApplicationsTrendChart(ctxTrend, {
+             labels: {{ trend_chart.labels|safe }},
+             data: {{ trend_chart.data|safe }}
+        });
+    }
+    // Grafik 3: Ma'qullanish % (Ma'lumotlar tayyor bo'lishi kerak)
+    const ctxSuccessRate = document.getElementById('chartSuccessRate');
+    if (ctxSuccessRate && typeof initSuccessRateChart === 'function') {
+        // initSuccessRateChart(ctxSuccessRate, { labels: [...], data: [...] });
+        console.warn("Success Rate Chart data needs processing in the view.");
+    }
+    // Grafik 4: Rollar
+    const ctxUserRoles = document.getElementById('chartUserRoles');
+    if (ctxUserRoles && typeof initUserRolesChart === 'function') {
+        initUserRolesChart(ctxUserRoles, {
+            labels: {{ role_chart.labels|safe }},
+            data: {{ role_chart.data|safe }}
+        });
+    }
+
+    // KPI animatsiyasi
+    if (typeof animateValue === 'function') {
+         document.querySelectorAll('.stat-card-value[data-target]').forEach(el => {
+             animateValue(el, 0, parseInt(el.dataset.target), 1500);
+         });
+    }
+});
+</script>
+{% endblock %}

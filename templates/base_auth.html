@@ -1,0 +1,60 @@
+{% load static %}
+
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Autentifikatsiya{% endblock %} | Shaffof Imkoniyat</title>
+    {# Asosiy shriftlar va ikonkalar #}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    {# Asosiy va autentifikatsiya stillari #}
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'css/auth.css' %}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="auth-page">
+
+    {# --- Django Messages --- #}
+    {% if messages %}
+        <div class="messages-container auth-messages"> {# Maxsus klass qo'shildi #}
+            {% for message in messages %}
+                <div class="toast-message toast-{{ message.tags }}" role="alert" aria-live="assertive" aria-atomic="true">
+                    <span>
+                      {% if message.tags == 'success' %}<i class="fa-solid fa-check-circle me-2"></i>
+                      {% elif message.tags == 'error' %}<i class="fa-solid fa-times-circle me-2"></i>
+                      {% elif message.tags == 'warning' %}<i class="fa-solid fa-exclamation-triangle me-2"></i>
+                      {% elif message.tags == 'info' %}<i class="fa-solid fa-info-circle me-2"></i>
+                      {% endif %}
+                      {{ message }}
+                    </span>
+                     <button type="button" class="btn-close-toast" onclick="this.parentElement.style.display='none';">×</button>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+    {# --- End Django Messages --- #}
+
+    {# Asosiy kontent bloki #}
+    <main class="auth-main">
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    {# Skriptlar #}
+    <script>
+         // Toastlarni avtomatik yopish (oddiy usul)
+         setTimeout(function() {
+             const messageContainer = document.querySelector('.auth-messages');
+             if (messageContainer) {
+                 messageContainer.style.transition = 'opacity 0.5s ease';
+                 messageContainer.style.opacity = '0';
+                 setTimeout(() => { messageContainer.remove(); }, 500);
+             }
+         }, 7000); // 7 sekunddan keyin
+    </script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

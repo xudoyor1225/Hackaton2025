@@ -1,0 +1,387 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_head %}
+<style>
+    /* Modal oyna uchun stillar */
+    .modal { display: none; position: fixed; z-index: 1055; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); backdrop-filter: blur(5px); animation: fadeIn 0.3s ease; }
+    .modal.active { display: flex; align-items: center; justify-content: center; }
+    .modal-content { background-color: var(--bg-card); margin: auto; padding: 30px 40px; border: 1px solid var(--border-color); width: 90%; max-width: 600px; border-radius: var(--border-radius-xl); box-shadow: var(--shadow-xl); position: relative; animation: slideUpModal 0.4s ease forwards; opacity: 0; transform: translateY(20px); }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideUpModal { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .modal-close { color: var(--text-light); position: absolute; top: 15px; right: 20px; font-size: 1.8rem; font-weight: bold; cursor: pointer; transition: color 0.2s ease, transform 0.2s ease; }
+    .modal-close:hover { color: var(--accent-red); transform: rotate(90deg); }
+    .modal-header h2 { font-size: 1.6rem; margin-bottom: 20px; color: var(--text-dark); }
+    .modal-body { max-height: 65vh; overflow-y: auto; padding-right: 15px; margin-right: -15px; } /* Scroll uchun */
+    .modal-footer { margin-top: 25px; padding-top: 20px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 10px; }
+    .error-message { color: var(--accent-red); font-size: 0.8rem; margin-top: 4px; display: block; }
+    .form-group.has-error input, .form-group.has-error select, .form-group.has-error textarea { border-color: var(--accent-red) !important; }
+</style>
+{% endblock %}
+
+
+{% block content %}
+<div class="main-content-wrapper">
+    <!-- Header -->
+     <header class="main-header">
+        <div class="header-left">
+           <button class="menu-toggle-btn" id="menu-toggle" title="Menyuni yig'ish/kengaytirish" aria-label="Menyu">
+               <i class="fa-solid fa-bars"></i>
+           </button>
+       </div>
+       <div class="header-right">
+            <div class="profile-dropdown" title="Profil sozlamalari">
+            </div>
+       </div>
+   </header>
+
+    <!-- Sahifa kontenti -->
+    <main class="page-content">
+        <h1 class="page-title">Foydalanuvchilarni Boshqarish</h1>
+         <div class="animate-on-load">
+             <div class="card-table-wrapper">
+                <div class="table-header-controls">
+                    <h2 class="table-title">Foydalanuvchilar Roʻyxati</h2>
+                    <form method="get" class="table-filters">
+                        <div class="table-search">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input type="text" name="search" id="users-search-input" placeholder="Ism, email, rol boʻyicha qidirish..." value="{{ request.GET.search|default:'' }}">
+                        </div>
+                        <div class="table-actions">
+                             <select name="role_filter" id="users-role-filter" class="btn btn-secondary btn-sm" style="height: 38px;">
+                                 <option value="">Barcha rollar</option>
+                                 {% for value, display in role_choices %}
+                                 <option value="{{ value }}" {% if request.GET.role_filter == value %}selected{% endif %}>{{ display }}</option>
+                                 {% endfor %}
+                             </select>
+                              <select name="status_filter" id="users-status-filter" class="btn btn-secondary btn-sm" style="height: 38px;">
+                                 <option value="">Barcha holatlar</option>
+                                 {% for value, display in status_choices_filter %}
+                                 <option value="{{ value }}" {% if request.GET.status_filter == value %}selected{% endif %}>{{ display }}</option>
+                                 {% endfor %}
+                             </select>
+                             <button type="submit" class="btn btn-light btn-sm"><i class="fa-solid fa-filter"></i> Filtr</button>
+                             <a href="{% url 'users' %}" class="btn btn-secondary btn-sm"><i class="fa-solid fa-times"></i> Tozalash</a>
+                            <button type="button" class="btn btn-primary btn-sm" id="add-user-btn"><i class="fa-solid fa-user-plus"></i> Foydalanuvchi Qoʻshish</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="table-responsive">
+                    <table class="cool-table" id="users-table">
+                        <thead>
+                            <tr>
+                                <th>Foydalanuvchi</th>
+                                <th>Roli</th>
+                                <th>Roʻyxatdan oʻtgan sana</th>
+                                <th>Arizalar soni</th>
+                                <th>Holati</th>
+                                <th>Amallar</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for u_data in users_page %} {# Viewdan 'users_page' keladi #}
+                            <tr id="user-row-{{ u_data.user.id }}">
+                                <td>
+                                    <div class="applicant-info">
+                                        <div>
+                                            <span class="applicant-name">{{ u_data.user.get_full_name|default:u_data.user.username }}</span>
+                                            <span class="applicant-email">{{ u_data.user.email }}</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>{{ u_data.role_display }}</td>
+                                <td>{{ u_data.user.date_joined|date:"Y-m-d"|default:"-" }}</td>
+                                <td>{{ u_data.app_count }}</td>
+                                <td id="status-cell-{{ u_data.user.id }}">
+                                    <span class="status-badge {% if u_data.user.is_active %}status-approved{% else %}status-rejected{% endif %}">
+                                        <i class="fa-solid {% if u_data.user.is_active %}fa-circle-check{% else %}fa-circle-xmark{% endif %}"></i>
+                                        {{ u_data.status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="action-buttons">
+                                         <button class="edit-btn" title="Tahrirlash" data-userid="{{ u_data.user.id }}"><i class="fa-solid fa-user-pen"></i></button>
+                                         <button class="toggle-status-btn"
+                                                 title="{% if u_data.user.is_active %}Faolsizlantirish{% else %}Faollashtirish{% endif %}"
+                                                 data-userid="{{ u_data.user.id }}"
+                                                 data-url="{% url 'user_toggle_status' u_data.user.id %}"
+                                                 data-csrf="{{ csrf_token }}">
+                                             <i class="fa-solid {% if u_data.user.is_active %}fa-user-slash{% else %}fa-user-check{% endif %}"></i>
+                                         </button>
+                                    </div>
+                                </td>
+                            </tr>
+                           {% empty %}
+                               <tr>
+                                   <td colspan="6" style="text-align: center; padding: 40px 0;">Foydalanuvchilar topilmadi.</td>
+                               </tr>
+                           {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+    <!-- Footer -->
+</div>
+
+<!-- Foydalanuvchi qo'shish/tahrirlash uchun Modal Oyna -->
+<div id="user-modal" class="modal">
+    <div class="modal-content">
+        <span class="modal-close" id="user-modal-close-btn">×</span>
+        <div class="modal-header">
+            <h2 id="user-modal-title">Yangi foydalanuvchi qoʻshish</h2>
+        </div>
+        {# Action URL JS orqali o'zgarishi mumkin, lekin default create #}
+        <form id="user-form" method="post" action="{% url 'user_create_update' %}">
+            {% csrf_token %}
+            <input type="hidden" id="user-edit-id" name="user_id"> {# JS buni tahrirlashda to'ldiradi #}
+            <div class="modal-body">
+                 {# Formadagi umumiy xatoliklarni ko'rsatish (agar kerak bo'lsa) #}
+                 <div id="form-non-field-errors" class="form-errors alert alert-danger" style="display: none;"></div>
+                 {# Formani render qilish (form o'zgaruvchisi viewdan keladi) #}
+                 {% include 'includes/form_fields.html' with form=form %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="user-modal-cancel-btn">Bekor qilish</button>
+                <button type="submit" class="btn btn-primary" id="user-modal-save-btn">Saqlash</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock content %}
+
+{% block extra_scripts %}
+{# Modal va AJAX uchun JS kod (users.html uchun) #}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const userModal = document.getElementById('user-modal');
+    const userForm = document.getElementById('user-form');
+    const addUserBtn = document.getElementById('add-user-btn');
+    const editUserBtns = document.querySelectorAll('.edit-btn'); // Tahrirlash tugmalari
+    const toggleStatusBtns = document.querySelectorAll('.toggle-status-btn'); // Status o'zgartirish
+    const userIdInput = document.getElementById('user-edit-id');
+    const modalTitle = document.getElementById('user-modal-title');
+    const saveBtn = document.getElementById('user-modal-save-btn');
+    const modalCloseBtn = document.getElementById('user-modal-close-btn');
+    const modalCancelBtn = document.getElementById('user-modal-cancel-btn');
+    const nonFieldErrorsDiv = document.getElementById('form-non-field-errors');
+
+    // CSRF token olish funksiyasi
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+     // Modalni yopish
+     function closeModal() { userModal.classList.remove('active'); }
+
+    // Formadagi xatoliklarni tozalash
+    function clearFormErrors() {
+        nonFieldErrorsDiv.style.display = 'none';
+        nonFieldErrorsDiv.innerHTML = '';
+        userForm.querySelectorAll('.form-group').forEach(fg => {
+            fg.classList.remove('has-error');
+            fg.querySelector('.error-message')?.remove();
+        });
+         userForm.querySelectorAll('input, select').forEach(inp => inp.style.borderColor = '');
+    }
+
+    // Formadagi xatoliklarni ko'rsatish
+    function displayFormErrors(errors) {
+        clearFormErrors();
+        for (const field in errors) {
+            if (field === '__all__') {
+                nonFieldErrorsDiv.innerHTML = errors[field].join('<br>');
+                nonFieldErrorsDiv.style.display = 'block';
+            } else {
+                const input = userForm.elements[field];
+                if (input) {
+                    const formGroup = input.closest('.form-group');
+                    formGroup?.classList.add('has-error');
+                     input.style.borderColor = 'var(--accent-red)'; // Highlight invalid input
+                    const errorSpan = document.createElement('span');
+                    errorSpan.classList.add('error-message');
+                    errorSpan.innerHTML = errors[field].join(', ');
+                    // Labeldan keyin yoki inputdan keyin qo'shish
+                    input.parentNode.insertBefore(errorSpan, input.nextSibling);
+                }
+            }
+        }
+    }
+
+    // Tahrirlash uchun modalni ochish
+    function openModalForEdit(userId) {
+        clearFormErrors();
+        fetch(`/manage/users/details/${userId}/`, {
+            headers: {'X-Requested-With': 'XMLHttpRequest'}
+        })
+        .then(response => response.ok ? response.json() : Promise.reject('Error fetching user details'))
+        .then(data => {
+            userIdInput.value = data.id;
+            userForm.elements['name'].value = data.name;
+            userForm.elements['email'].value = data.email;
+            userForm.elements['role'].value = data.role;
+            userForm.elements['is_active'].checked = data.is_active; // Bu is_active uchun CheckboxInput bo'lishi kerak
+            const passwordInput = userForm.elements['password'];
+            passwordInput.value = '';
+            passwordInput.placeholder = 'Oʻzgartirmaslik uchun boʻsh qoldiring';
+            passwordInput.required = false; // Tahrirlashda majburiy emas
+            modalTitle.textContent = 'Foydalanuvchini tahrirlash';
+            userModal.classList.add('active');
+             setTimeout(() => { userForm.elements['name']?.focus(); }, 100);
+        })
+        .catch(error => {
+            console.error('Error fetching user details:', error);
+            showToast('Foydalanuvchi maʼlumotlarini olishda xatolik.', 'Xatolik', 'error');
+        });
+    }
+
+    // Qo'shish uchun modalni ochish
+    addUserBtn.addEventListener('click', () => {
+        clearFormErrors();
+        userForm.reset();
+        userIdInput.value = '';
+        userForm.elements['password'].placeholder = 'Parolni kiriting (kamida 8 belgi)';
+        userForm.elements['password'].required = true; // Qo'shishda majburiy
+        userForm.elements['is_active'].checked = true; // Yangi user faol bo'lsin
+        modalTitle.textContent = 'Yangi foydalanuvchi qoʻshish';
+        userModal.classList.add('active');
+         setTimeout(() => { userForm.elements['name']?.focus(); }, 100);
+    });
+
+    // Tahrirlash tugmalari uchun listener
+    editUserBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const userId = e.currentTarget.dataset.userid;
+            openModalForEdit(userId);
+        });
+    });
+
+    // Modalni yopish tugmalari
+    modalCloseBtn.addEventListener('click', closeModal);
+    modalCancelBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+    // Formani jo'natish (AJAX)
+    userForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saqlanmoqda...';
+        clearFormErrors(); // Oldingi xatoliklarni tozalash
+
+        const formData = new FormData(userForm);
+        const url = userForm.action; // Form actionidan URLni olish
+
+        fetch(url, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        // .then(response => response.json().then(data => ({ status: response.status, body: data }))) // Bu usul xatolik berishi mumkin agar javob JSON bo'lmasa
+        .then(response => {
+             // Javobni tekshirish (redirect bo'lishi mumkin)
+             if (response.redirected) {
+                 window.location.href = response.url; // Agar redirect bo'lsa, o'sha yerga o'tish
+                 return { success: true }; // Muvaffaqiyatli deb hisoblash
+             }
+             if (!response.ok) {
+                 // Agar javob OK bo'lmasa, JSON xatolikni olishga harakat qilish
+                 return response.json().then(err => Promise.reject(err));
+             }
+             return response.json(); // Agar javob OK bo'lsa JSONni olish
+         })
+        .then(data => {
+             // Agar redirect bo'lmagan bo'lsa va success true bo'lsa
+             if (data && data.success) {
+                closeModal();
+                window.location.reload(); // Sahifani yangilash eng oson yo'li
+             } else if (data && !data.success && data.errors) {
+                 // Agar backend JSON xatolik qaytargan bo'lsa
+                 displayFormErrors(data.errors);
+                 showToast('Iltimos, formadagi xatoliklarni toʻgʻrilang.', 'Xatolik', 'error', 7000);
+             }
+             // Agar redirect bo'lgan bo'lsa, bu qism ishlamaydi
+        })
+        .catch(errorData => { // Bu yerda backenddan kelgan JSON xatolik yoki network xatoligi bo'lishi mumkin
+            console.error('Error saving user:', errorData);
+            if (errorData && errorData.errors) { // Agar backenddan JSON xatolik kelgan bo'lsa
+                 displayFormErrors(errorData.errors);
+                 showToast('Iltimos, formadagi xatoliklarni toʻgʻrilang.', 'Xatolik', 'error', 7000);
+            } else { // Network yoki boshqa xatolik
+                showToast('Server bilan bogʻlanishda yoki saqlashda xatolik.', 'Xatolik', 'error');
+                nonFieldErrorsDiv.innerHTML = 'Server bilan bogʻlanishda yoki saqlashda xatolik yuz berdi.';
+                nonFieldErrorsDiv.style.display = 'block';
+            }
+        })
+        .finally(() => {
+             saveBtn.disabled = false;
+             saveBtn.innerHTML = 'Saqlash';
+        });
+    });
+
+    // Statusni o'zgartirish (AJAX POST)
+    toggleStatusBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const button = e.currentTarget;
+            const url = button.dataset.url;
+            const csrf = button.dataset.csrf;
+            const userId = button.dataset.userid;
+
+            if (!confirm('Haqiqatan ham foydalanuvchi holatini oʻzgartirmoqchimisiz?')) return;
+
+            button.disabled = true;
+            button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrf,
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.ok ? response.json() : Promise.reject('Error toggling status'))
+            .then(data => {
+                 if (data.success) {
+                     // Jadvaldagi statusni yangilash
+                     const statusCell = document.getElementById(`status-cell-${userId}`);
+                     if (statusCell) {
+                          statusCell.innerHTML = `<span class="status-badge ${data.is_active ? 'status-approved' : 'status-rejected'}"><i class="fa-solid ${data.is_active ? 'fa-circle-check' : 'fa-circle-xmark'}"></i> ${data.status_display}</span>`;
+                     }
+                     // Tugmani yangilash
+                     button.title = data.is_active ? 'Faolsizlantirish' : 'Faollashtirish';
+                     button.innerHTML = `<i class="fa-solid ${data.is_active ? 'fa-user-slash' : 'fa-user-check'}"></i>`;
+                     showToast('Foydalanuvchi holati muvaffaqiyatli oʻzgartirildi.', 'Muvaffaqiyatli', 'success');
+                 } else {
+                     showToast('Holatni oʻzgartirishda xatolik.', 'Xatolik', 'error');
+                 }
+            })
+            .catch(error => {
+                console.error("Error toggling status:", error);
+                showToast('Server bilan bogʻlanishda xatolik.', 'Xatolik', 'error');
+                 // Tugmani asl holiga qaytarish (ixtiyoriy)
+                  const originalIcon = button.querySelector('i').className.includes('fa-user-slash') ? 'fa-user-slash' : 'fa-user-check';
+                  button.innerHTML = `<i class="fa-solid ${originalIcon}"></i>`;
+            })
+            .finally(() => {
+                button.disabled = false;
+            });
+        });
+    });
+
+});
+</script>
+{% endblock %}

@@ -1,0 +1,198 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Boshqaruv Paneli{% endblock %} | Shaffof Imkoniyat</title> {# Default title #}
+    {# Asosiy shriftlar va ikonkalar #}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    {# Asosiy CSS fayli #}
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    {# Grafiklar uchun kutubxona (agar kerak bo'lsa) #}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    {# Har bir sahifa uchun qo'shimcha head elementlari #}
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="dashboard-page {% block body_class %}{% endblock %}"> {# Body klassini o'zgartirish imkoniyati #}
+
+    {# --- Django Messages --- #}
+    {% if messages %}
+        <div class="messages-container" style="position: fixed; top: 20px; right: 20px; z-index: 1100; width: auto; max-width: 400px;">
+            {% for message in messages %}
+                <div class="toast-message toast-{{ message.tags }}" role="alert" aria-live="assertive" aria-atomic="true" style="background-color: #333; color: white; padding: 10px 15px; margin-bottom: 10px; border-radius: 5px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                    <span>
+                      {% if message.tags == 'success' %}<i class="fa-solid fa-check-circle me-2" style="color: #198754;"></i> {# Yashil #}
+                      {% elif message.tags == 'error' %}<i class="fa-solid fa-times-circle me-2" style="color: #dc3545;"></i> {# Qizil #}
+                      {% elif message.tags == 'warning' %}<i class="fa-solid fa-exclamation-triangle me-2" style="color: #ffc107;"></i> {# Sariq #}
+                      {% elif message.tags == 'info' %}<i class="fa-solid fa-info-circle me-2" style="color: #0dcaf0;"></i> {# Moviy #}
+                      {% endif %}
+                      {{ message }}
+                    </span>
+                     <button type="button" class="btn-close-toast" style="background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer; line-height: 1; opacity: 0.8; padding: 0 0 0 10px;" onclick="this.parentElement.style.display='none';">×</button>
+                </div>
+            {% endfor %}
+        </div>
+        <script>
+             // Toastlarni avtomatik yopish
+             setTimeout(function() {
+                 const messageContainer = document.querySelector('.messages-container');
+                 if (messageContainer) {
+                     messageContainer.style.transition = 'opacity 0.5s ease';
+                     messageContainer.style.opacity = '0';
+                     setTimeout(() => { messageContainer.remove(); }, 500);
+                 }
+             }, 7000); // 7 sekunddan keyin
+        </script>
+    {% endif %}
+    {# --- End Django Messages --- #}
+
+
+    <div class="dashboard-wrapper">
+        <!-- ======================= YON PANEL (SIDEBAR) ======================= -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <a href="{% url 'dashboard' %}" class="sidebar-logo-text">Shaffof Imkoniyat</a>
+                 {# Menyuni yopish tugmasi (kichik ekranlar uchun, ixtiyoriy) #}
+                 {# <button class="sidebar-close-btn" id="sidebar-close">×</button> #}
+            </div>
+            <nav class="sidebar-menu">
+                {# --- Asosiy Menyular (Hamma uchun) --- #}
+                <div class="menu-category">Asosiy</div>
+                <ul class="menu-items">
+                    <li class="menu-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"><a href="{% url 'dashboard' %}" class="menu-link"><i class="fa-solid fa-shapes"></i> <span>Boshqaruv Paneli</span></a></li>
+                    {% if user.is_authenticated %} {# Faqat kirganlar uchun mening arizalarim #}
+                    <li class="menu-item {% if request.resolver_match.url_name == 'my_applications' %}active{% endif %}"><a href="{% url 'my_applications' %}" class="menu-link"><i class="fa-solid fa-file-lines"></i> <span>Mening Arizalarim</span></a></li>
+                    {% endif %}
+                    <li class="menu-item {% if request.resolver_match.url_name == 'find_scholarships' %}active{% endif %}"><a href="{% url 'find_scholarships' %}" class="menu-link"><i class="fa-solid fa-magnifying-glass-chart"></i> <span>Stipendiyalarni Topish</span></a></li>
+                    {% if user.is_authenticated %} {# Faqat kirganlar ariza yubora oladi #}
+                    <li class="menu-item {% if request.resolver_match.url_name == 'submit_application' %}active{% endif %}"><a href="{% url 'submit_application' %}" class="menu-link"><i class="fa-solid fa-paper-plane"></i> <span>Ariza Yuborish</span></a></li>
+                    {% endif %}
+                </ul>
+
+                {# --- Admin Menyusi (Faqat admin/superadmin ko'rsin) --- #}
+                {% if user.is_authenticated and user.profile.role in 'admin,superadmin' %} {# Rolni tekshirish #}
+                <div class="menu-category">Ma'muriyat</div>
+                 <ul class="menu-items">
+                    <li class="menu-item {% if request.resolver_match.url_name == 'all_applications' %}active{% endif %}"><a href="{% url 'all_applications' %}" class="menu-link"><i class="fa-solid fa-table-list"></i> <span>Barcha Arizalar</span></a></li>
+                    <li class="menu-item {% if request.resolver_match.url_name == 'manage_scholarships' %}active{% endif %}"><a href="{% url 'manage_scholarships' %}" class="menu-link"><i class="fa-solid fa-graduation-cap"></i> <span>Stipendiyalarni Boshqarish</span></a></li>
+                     {# Users faqat SuperAdmin uchun #}
+                     {% if user.profile.role == 'superadmin' %}
+                        <li class="menu-item {% if request.resolver_match.url_name == 'users' %}active{% endif %}"><a href="{% url 'users' %}" class="menu-link"><i class="fa-solid fa-users-gear"></i> <span>Foydalanuvchilar</span></a></li>
+                     {% endif %}
+                    <li class="menu-item {% if request.resolver_match.url_name == 'analytics' %}active{% endif %}"><a href="{% url 'analytics' %}" class="menu-link"><i class="fa-solid fa-chart-pie"></i> <span>Tahlil</span></a></li>
+                </ul>
+                {% endif %} {# Admin menyusi tugashi #}
+
+                {# --- Hisob Menyusi (Hamma uchun farqli) --- #}
+                 <div class="menu-category">Hisob</div>
+                 <ul class="menu-items">
+                     {# Foydalanuvchi tizimga kirgan bo'lsa #}
+                     {% if user.is_authenticated %}
+                         <li class="menu-item {% if request.resolver_match.url_name == 'profile_settings' %}active{% endif %}">
+                             <a href="{% url 'profile_settings' %}" class="menu-link">
+                                 <i class="fa-solid fa-user-pen"></i> <span>Profil Sozlamalari</span>
+                             </a>
+                         </li>
+                         <li class="menu-item {% if request.resolver_match.url_name == 'security' %}active{% endif %}">
+                             <a href="{% url 'security' %}" class="menu-link">
+                                 <i class="fa-solid fa-shield-halved"></i> <span>Xavfsizlik</span>
+                             </a>
+                         </li>
+                         <li class="menu-item {% if request.resolver_match.url_name == 'help_center' %}active{% endif %}">
+                              <a href="{% url 'help_center' %}" class="menu-link">
+                                  <i class="fa-solid fa-circle-question"></i> <span>Yordam Markazi</span>
+                              </a>
+                          </li>
+                         {# CHIQISH (LOGOUT) FORMASI #}
+                         <li class="menu-item">
+                             <form method="post" action="{% url 'logout' %}" style="margin: 0; padding: 0; display: inline;">
+                                 {% csrf_token %}
+                                 <button type="submit" class="menu-link logout-link" id="logout-btn"
+                                         style="border: none; background: none; padding: 0; margin: 0; cursor: pointer; display: flex; align-items: center; width: 100%; color: inherit; font-family: inherit; font-size: inherit; text-align: left;">
+                                     <i class="fa-solid fa-arrow-right-from-bracket" style="width: 20px; text-align: center; margin-left: 15px;"></i> {# Ikonka joylashuvi #}
+                                     <span style="margin-left: 10px;">Chiqish</span>
+                                 </button>
+                             </form>
+                         </li>
+                     {# Foydalanuvchi tizimga kirmagan bo'lsa #}
+                     {% else %}
+                          <li class="menu-item {% if request.resolver_match.url_name == 'help_center' %}active{% endif %}">
+                              <a href="{% url 'help_center' %}" class="menu-link">
+                                  <i class="fa-solid fa-circle-question"></i> <span>Yordam Markazi</span>
+                              </a>
+                          </li>
+                          <li class="menu-item {% if request.resolver_match.url_name == 'login' %}active{% endif %}">
+                              <a href="{% url 'login' %}?next={{ request.path }}" class="menu-link"> {# Login qilib shu sahifaga qaytish uchun 'next' #}
+                                  <i class="fa-solid fa-sign-in-alt"></i> <span>Kirish</span>
+                              </a>
+                          </li>
+                          <li class="menu-item {% if request.resolver_match.url_name == 'register' %}active{% endif %}">
+                              <a href="{% url 'register' %}" class="menu-link">
+                                  <i class="fa-solid fa-user-plus"></i> <span>Roʻyxatdan oʻtish</span>
+                              </a>
+                          </li>
+                     {% endif %} {# user.is_authenticated tekshiruvi tugashi #}
+                 </ul>
+            </nav>
+
+            {# --- Yon panel pastidagi profil qismi (faqat kirganlar uchun) --- #}
+            {% if user.is_authenticated %}
+                <div class="user-profile-sidebar">
+                    <a href="{% url 'profile_settings' %}" title="Profil sozlamalariga o'tish">
+                     </a>
+                     <div class="user-info">
+                         <span class="user-name" id="sidebar-user-name" title="{{ user.username }}">
+                             {{ user.get_full_name|default:user.username }}
+                         </span>
+                         <span class="user-role" id="sidebar-user-role">
+                             {% firstof user.profile.get_role_display 'Foydalanuvchi' %} {# Agar profil yoki rol topilmasa #}
+                         </span>
+                     </div>
+                </div>
+            {% endif %} {# Profil qismi tugashi #}
+
+        </aside>
+        <!-- ======================= END YON PANEL (SIDEBAR) ======================= -->
+
+        <!-- ======================= ASOSIY KONTENT BLOKI ======================= -->
+        {# Bu blok meros oluvchi shablonlar tomonidan to'ldiriladi #}
+        {% block content %}
+            {# Standart kontent (agar meros oluvchi shablon bo'sh bo'lsa) #}
+            <div class="main-content-wrapper">
+                 <header class="main-header">
+                     <div class="header-left">
+                         <button class="menu-toggle-btn" id="menu-toggle" title="Menyuni yig'ish/kengaytirish" aria-label="Menyu">
+                             <i class="fa-solid fa-bars"></i>
+                         </button>
+                     </div>
+                     <div class="header-right">
+                         {# Header o'ng qismi #}
+                     </div>
+                 </header>
+                 <main class="page-content">
+                     <h1>Sahifa topilmadi</h1>
+                     <p>Siz qidirayotgan sahifa mavjud emas yoki koʻchirilgan.</p>
+                     <a href="{% url 'dashboard' %}">Bosh sahifaga qaytish</a>
+                 </main>
+                 {% include 'includes/footer.html' %}
+            </div>
+        {% endblock content %}
+        <!-- ======================= END ASOSIY KONTENT BLOKI ======================= -->
+
+    </div> {# End dashboard-wrapper #}
+
+    {# ======================= Global skriptlar ======================= #}
+    {# Asosiy JavaScript fayli (masalan, menyu toggle uchun) #}
+    <script src="{% static 'js/script.js' %}"></script>
+    {# Grafik kutubxonasi (agar kerak bo'lsa) #}
+    {# <script src="{% static 'js/chart-config.js' %}"></script> #}
+
+    {# Har bir sahifa uchun qo'shimcha skriptlar #}
+    {% block extra_scripts %}{% endblock %}
+
+</body>
+</html>

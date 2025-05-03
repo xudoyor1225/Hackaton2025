@@ -1,0 +1,139 @@
+{# =================================================================== #}
+{#             Yordamchi Shablon: Bitta Forma Maydonini Render Qilish   #}
+{# =================================================================== #}
+{# Maqsad: Forma maydonini, uning labelini, yordam matnini (help_text) #}
+{#         va xatoliklarini (errors) standart HTML strukturasida      #}
+{#         chiqarish.                                                  #}
+{#                                                                     #}
+{# Qanday ishlatiladi:                                                 #}
+{# {% include 'includes/form_field.html' with field=form.your_field_name %} #}
+{#                                                                     #}
+{# Kerakli kontekst o'zgaruvchisi:                                     #}
+{#   - field: Render qilinishi kerak bo'lgan Django form maydoni       #}
+{#            obyekti (masalan, form.username).                        #}
+{# =================================================================== #}
+
+{# Agar maydon mavjud bo'lsa davom etamiz #}
+{% if field %}
+    {# Asosiy konteyner div. Agar xatolik bo'lsa 'has-error' klassi qo'shiladi #}
+    <div class="form-group {% if field.errors %}has-error{% endif %}">
+
+        {# Maydon Labeli #}
+        <label for="{{ field.id_for_label }}">
+            {{ field.label }}
+            {# Agar maydon majburiy bo'lsa, yulduzcha (*) qo'shamiz #}
+            {% if field.field.required %}
+                <span class="required-indicator">*</span>
+            {% endif %}
+        </label>
+
+        {# Maydonning o'zi (input, select, textarea). Django buni avtomatik render qiladi. #}
+        {{ field }}
+
+        {# Yordam matni (Help Text) #}
+        {# Agar yordam matni mavjud bo'lsa va bo'sh bo'lmasa #}
+        {% if field.help_text %}
+            <small class="input-hint" id="{{ field.id_for_label }}-help">
+                {# Agar help_text HTML bo'lishi mumkin bo'lsa |safe ishlatiladi, aks holda shart emas #}
+                {{ field.help_text|safe }}
+            </small>
+        {% endif %}
+
+        {# Maydon Xatoliklari #}
+        {# Agar shu maydon uchun xatoliklar bo'lsa #}
+        {% if field.errors %}
+            <div class="errorlist" id="{{ field.id_for_label }}-errors">
+                {% for error in field.errors %}
+                    <span class="error-message">
+                        <i class="fa-solid fa-circle-exclamation"></i> {# Xatolik ikonchasi (ixtiyoriy) #}
+                        {{ error }}
+                    </span>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+    </div>
+{% else %}
+    {# Agar 'field' o'zgaruvchisi uzatilmagan bo'lsa (ehtiyotkorlik uchun) #}
+    <div class="form-group error">
+        <p class="error-message">Shablon xatosi: 'field' o'zgaruvchisi topilmadi.</p>
+    </div>
+{% endif %}
+
+{# Qo'shimcha CSS (agar kerak bo'lsa) #}
+<style>
+    /* Bu stillarni asosiy CSS faylingizga qo'shganingiz ma'qul */
+    .form-group {
+        margin-bottom: 1rem; /* Yoki 15px, 20px */
+    }
+    .form-group label {
+        display: block;
+        margin-bottom: 0.4rem; /* Yoki 5px, 8px */
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: #495057; /* var(--text-dark) */
+    }
+    .required-indicator {
+        color: var(--accent-red, #dc3545); /* Qizil rang */
+        font-weight: bold;
+        margin-left: 2px;
+    }
+    /* Formaning input, select, textarea elementlari uchun umumiy stil */
+    .form-group input:not([type='checkbox']):not([type='radio']),
+    .form-group select,
+    .form-group textarea {
+        display: block;
+        width: 100%;
+        padding: 0.6rem 0.9rem; /* O'lchamlarni moslang */
+        font-size: 0.95rem;
+        font-weight: 400;
+        line-height: 1.5;
+        color: #212529; /* var(--text-darker) */
+        background-color: #fff; /* var(--bg-input) */
+        background-clip: padding-box;
+        border: 1px solid #ced4da; /* var(--border-color) */
+        appearance: none; /* Brauzerning standart ko'rinishini olib tashlash */
+        border-radius: 0.375rem; /* var(--border-radius-md) */
+        transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+    }
+     .form-group input:focus,
+     .form-group select:focus,
+     .form-group textarea:focus {
+         border-color: var(--primary-brand, #86b7fe);
+         outline: 0;
+         box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, .25); /* var(--primary-brand-rgb) */
+     }
+     .form-group textarea {
+         min-height: calc(1.5em + 1.2rem + 2px); /* Kamida bir qator balandligi */
+     }
+     .input-hint {
+        display: block;
+        margin-top: 0.3rem; /* Yoki 4px, 5px */
+        font-size: 0.8rem;
+        color: #6c757d; /* var(--text-medium) */
+    }
+    .errorlist {
+        margin-top: 0.4rem; /* Yoki 5px, 6px */
+    }
+    .error-message {
+        display: block; /* Har bir xatolik yangi qatorda */
+        color: var(--accent-red, #dc3545);
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+    .error-message i { /* Ikonka uchun kichik o'ng joy */
+        margin-right: 4px;
+    }
+    /* Xatolik bo'lganda input chegarasini qizil qilish */
+    .form-group.has-error input:not([type='checkbox']):not([type='radio']),
+    .form-group.has-error select,
+    .form-group.has-error textarea {
+        border-color: var(--accent-red, #dc3545);
+    }
+    .form-group.has-error input:focus,
+    .form-group.has-error select:focus,
+    .form-group.has-error textarea:focus {
+        border-color: var(--accent-red, #dc3545);
+        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, .25); /* var(--accent-red-rgb) */
+    }
+</style>

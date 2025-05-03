@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+<div class="main-content-wrapper">
+    <!-- Header -->
+     <header class="main-header">
+        <div class="header-left">
+           <button class="menu-toggle-btn" id="menu-toggle" title="Menyuni yig'ish/kengaytirish" aria-label="Menyu">
+               <i class="fa-solid fa-bars"></i>
+           </button>
+       </div>
+       <div class="header-right">
+       </div>
+   </header>
+
+    <!-- Sahifa kontenti -->
+    <main class="page-content">
+        <h1 class="page-title">Stipendiyalarni Qidirish</h1>
+        <div class="card-table-wrapper" style="padding-bottom: 10px; margin-bottom: 30px;">
+             <form method="get"> {# Formaga o'rash #}
+                 <div class="table-header-controls" style="border-bottom: none; margin-bottom: 15px; padding-bottom: 0;">
+                     <h2 class="table-title" style="margin-bottom: 0;">Qidiruv Filtrlari</h2>
+                      <a href="{% url 'find_scholarships' %}" class="btn btn-secondary btn-sm" id="reset-filters-btn"><i class="fa-solid fa-rotate-left"></i> Tozalash</a>
+                 </div>
+                 <div class="table-filters" style="padding-bottom: 20px; flex-wrap: wrap;">
+                     <div class="table-search" style="flex-basis: 40%; min-width: 250px;">
+                         <i class="fa-solid fa-magnifying-glass"></i>
+                         <input type="text" name="search" id="scholarship-search-input" placeholder="Nomi, ta'minotchi bo'yicha qidirish..." value="{{ request.GET.search|default:'' }}">
+                     </div>
+                     <select name="field" id="filter-field" class="btn btn-secondary btn-sm" style="height: 38px; flex-grow: 1; min-width: 150px;">
+                         <option value="">Barcha sohalar</option>
+                         {% for value, display in field_choices %}
+                         <option value="{{ value }}" {% if request.GET.field == value %}selected{% endif %}>{{ display }}</option>
+                         {% endfor %}
+                     </select>
+                     <select name="type" id="filter-type" class="btn btn-secondary btn-sm" style="height: 38px; flex-grow: 1; min-width: 150px;">
+                         <option value="">Barcha turlar</option>
+                          {% for value, display in type_choices %}
+                         <option value="{{ value }}" {% if request.GET.type == value %}selected{% endif %}>{{ display }}</option>
+                         {% endfor %}
+                     </select>
+                     {# Status filtri (agar kerak bo'lsa) #}
+                     {# <select name="status" id="filter-status" class="btn btn-secondary btn-sm" style="height: 38px; flex-grow: 1; min-width: 150px;">...</select> #}
+                     <button type="submit" class="btn btn-light btn-sm"><i class="fa-solid fa-filter"></i> Filtr</button>
+                 </div>
+             </form>
+        </div>
+
+        <!-- Stipendiyalar -->
+        <div class="scholarships-grid animate-on-load" id="scholarships-grid-container">
+            {% for sch in page_obj %}
+            <div class="scholarship-card {% if sch.popular %}popular{% endif %}">
+                 {# Ikona logikasi #}
+                 {% with field_lower=sch.field|lower %}
+                 <div class="scholarship-card-image">
+                      <i class="fa-solid
+                         {% if 'it' in field_lower or 'axborot texnologiyalari' in field_lower %} fa-laptop-code
+                         {% elif 'инженер' in field_lower or 'muhandislik' in field_lower %} fa-gear
+                         {% elif 'искусств' in field_lower or 'san\'at' in field_lower %} fa-palette
+                         {% else %} fa-award {% endif %}"></i>
+                 </div>
+                 {% endwith %}
+                 <div class="scholarship-card-content">
+                    <h3 class="scholarship-card-title">{{ sch.name }}</h3>
+                    <p class="scholarship-card-provider">Kimdan: {{ sch.provider }}</p>
+                    <div class="scholarship-card-info">
+                        <span class="info-item" title="Soha"><i class="fa-solid fa-flask"></i> <strong>{{ sch.get_field_display }}</strong></span>
+                        <span class="info-item" title="Miqdor"><i class="fa-solid fa-coins"></i> {{ sch.amount }}</span>
+                    </div>
+                    <p class="scholarship-card-description">
+                        {{ sch.description|truncatewords:30 }} {# Tavsifni qisqartirish #}
+                    </p>
+                </div>
+                <div class="scholarship-card-footer">
+                     {% if sch.status == 'active' %}
+                        <span class="scholarship-card-deadline"><i class="fa-regular fa-calendar-times"></i> Muddat: {{ sch.deadline|date:"Y-m-d" }}</span>
+                     {% else %}
+                        <span style="color: var(--text-light); font-weight: 500;"><i class="fa-solid fa-calendar-check"></i> Tugallangan</span>
+                     {% endif %}
+                    <a href="{% url 'submit_application' %}?scholarship_id={{ sch.id }}"
+                       class="btn btn-primary btn-sm {% if sch.status != 'active' %}disabled{% endif %}"
+                       {% if sch.status != 'active' %}aria-disabled="true" tabindex="-1"{% endif %}>
+                        Ariza Yuborish <i class="fa-solid fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+            {% empty %}
+                 <div style="grid-column: 1 / -1; text-align: center; padding: 50px 0; color: var(--text-light);">
+                     <i class="fa-solid fa-search" style="font-size: 2rem; margin-bottom: 10px;"></i>
+                     <p>Sizning so'rovingiz bo'yicha stipendiyalar topilmadi.</p>
+                 </div>
+            {% endfor %}
+        </div>
+
+
+    </main>
+
+</div>
+{% endblock content %}

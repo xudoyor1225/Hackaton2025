@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="main-content-wrapper">
+    <!-- Header -->
+     <header class="main-header">
+        <div class="header-left">
+           <button class="menu-toggle-btn" id="menu-toggle" title="Menyuni yig'ish/kengaytirish" aria-label="Menyu">
+               <i class="fa-solid fa-bars"></i>
+           </button>
+       </div>
+       <div class="header-right">
+            {# request.user obyektidan foydalanamiz #}
+            <div class="profile-dropdown" title="Profil sozlamalari">
+            </div>
+       </div>
+   </header>
+
+    <!-- Sahifa kontenti -->
+    <main class="page-content">
+        <h1 class="page-title">Profil Sozlamalari</h1>
+         <div class="animate-on-load">
+             <div class="settings-container" style="display: flex; gap: 30px;">
+                 {# Asosiy kontent #}
+                 <section class="settings-content" style="flex: 1;">
+                     {# Forma boshlanishi - fayl yuklash uchun enctype #}
+                     <form method="post" enctype="multipart/form-data">
+                          {% csrf_token %}
+
+                          {# Shaxsiy ma'lumotlar bo'limi #}
+                          <div class="settings-section" id="personal-info">
+                              <h2><i class="fa-regular fa-address-card"></i> Shaxsiy ma'lumotlar</h2>
+
+                              {# Agar formset yoki alohida formalar bo'lsa, xatoliklarni ko'rsatish #}
+                              {% if user_form.non_field_errors or profile_form.non_field_errors %}
+                                <div class="form-errors alert alert-danger">
+                                    {{ user_form.non_field_errors }}
+                                    {{ profile_form.non_field_errors }}
+                                </div>
+                              {% endif %}
+
+                              <div class="form-grid">
+                                   {# UserForm maydonlari #}
+                                   {% include 'includes/form_field.html' with field=user_form.first_name %}
+                                   {% include 'includes/form_field.html' with field=user_form.last_name %}
+
+                                    {# ProfileForm maydonlari (avatarsiz) #}
+                                    {% include 'includes/form_field.html' with field=profile_form.phone %}
+                                    {% include 'includes/form_field.html' with field=profile_form.birth_date %}
+                                    {% include 'includes/form_field.html' with field=profile_form.iin %}
+                                    {% include 'includes/form_field.html' with field=profile_form.address %}
+
+                                   {# Avatar uchun alohida joy #}
+                                   <div class="form-group {% if profile_form.avatar.errors %}has-error{% endif %}" style="grid-column: 1 / -1;">
+                                       <label for="{{ profile_form.avatar.id_for_label }}">{{ profile_form.avatar.label }}</label>
+                                       <div style="display: flex; align-items: center; gap: 15px;">
+                                            {# Joriy avatarni ko'rsatish #}
+                                           <div>
+                                               {{ profile_form.avatar }} {# Fayl input #}
+                                               {% if profile_form.avatar.help_text %}
+                                                   <small class="input-hint">{{ profile_form.avatar.help_text|safe }}</small>
+                                               {% endif %}
+                                               {% for error in profile_form.avatar.errors %}
+                                                   <span class="error-message">{{ error }}</span>
+                                               {% endfor %}
+                                           </div>
+                                       </div>
+                                   </div>
+                              </div>
+                          </div>
+
+                           {# Formani saqlash tugmasi #}
+                          <div style="text-align: right; margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--border-color);">
+                              <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Oʻzgarishlarni Saqlash</button>
+                          </div>
+                     </form> {# Forma tugashi #}
+                 </section>
+             </div>
+         </div>
+    </main>
+    <!-- Footer -->
+</div>
+{% endblock content %}
+
+{% block extra_scripts %}
+<script>
+// Avatar preview (ixtiyoriy)
+document.getElementById('{{ profile_form.avatar.id_for_label }}')?.addEventListener('change', function(event) {
+    const preview = document.getElementById('avatar-preview');
+    const file = event.target.files[0];
+    if (file && preview) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.src = e.target.result;
+        }
+        reader.readAsDataURL(file);
+    }
+});
+</script>
+{% endblock %}

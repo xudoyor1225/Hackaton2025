@@ -1,0 +1,580 @@
+{% extends 'base.html' %}
+{% load static %}
+{# Load custom template tags if you created the filter #}
+
+{% block content %}
+<div class="main-content-wrapper">
+    <!-- Header -->
+    <header class="main-header">
+        <div class="header-left">
+            <button class="menu-toggle-btn" id="menu-toggle" title="Menyuni yig'ish/kengaytirish" aria-label="Menyu">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+        </div>
+        <div class="header-right">
+            <button class="header-action-icon notifications-btn" title="Bildirishnomalar">
+                <i class="fa-regular fa-bell"></i>
+            </button>
+            <div class="profile-dropdown" title="Profil sozlamalari">
+                {# Use profile avatar if available #}
+                <span>{{ user.get_full_name|default:user.username }}</span>
+                <i class="fa-solid fa-chevron-down"></i>
+            </div>
+        </div>
+    </header>
+
+    <!-- Sahifa kontenti -->
+    <main class="page-content">
+        <h1 class="page-title">Boshqaruv Paneli</h1>
+        {# Display messages #}
+        {% if messages %}
+            <div class="messages-container" style="margin-bottom: 1.5rem;"> {# Added margin #}
+                {% for message in messages %}
+                {# Use Bootstrap alert classes if Bootstrap is loaded #}
+                <div class="alert alert-dismissible fade show {% if message.tags %}alert-{{ message.tags }}{% else %}alert-info{% endif %}" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="animate-on-load">
+            <!-- Statistika kartochkalari -->
+            <div class="stats-grid">
+                {# Card 1: Today's Submitted #}
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <div class="stat-card-icon-wrapper blue"><i class="fa-solid fa-file-circle-plus"></i></div>
+                        <div class="stat-card-title">Topshirilgan (Bugun)</div> {# Corrected title slightly #}
+                    </div>
+                    <div class="stat-card-value" data-target="{{ stats.today_submitted.value }}">{{ stats.today_submitted.value }}</div>
+                    <div class="stat-card-footer">
+                        {% if stats.today_submitted.change is not None %}
+                        <span class="stat-change {% if stats.today_submitted.change > 0 %}positive{% elif stats.today_submitted.change < 0 %}negative{% else %}neutral{% endif %}">
+                            <i class="fa-solid {% if stats.today_submitted.change > 0 %}fa-arrow-trend-up{% elif stats.today_submitted.change < 0 %}fa-arrow-trend-down{% else %}fa-minus{% endif %}"></i>
+                            {{ stats.today_submitted.change }}%
+                        </span>
+                        <span class="stat-period">kechagiga nisbatan</span>
+                        {% else %}
+                         <span class="stat-period">Kechagi ma'lumot yo'q</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {# Card 2: Approved This Month #}
+                <div class="stat-card">
+                     <div class="stat-card-header">
+                         <div class="stat-card-icon-wrapper green"><i class="fa-solid fa-thumbs-up"></i></div>
+                         <div class="stat-card-title">Ma'qullangan (oy davomida)</div>
+                     </div>
+                     <div class="stat-card-value" data-target="{{ stats.month_approved.value }}">{{ stats.month_approved.value }}</div>
+                     <div class="stat-card-footer">
+                          {% if stats.month_approved.change is not None %}
+                          <span class="stat-change {% if stats.month_approved.change > 0 %}positive{% elif stats.month_approved.change < 0 %}negative{% else %}neutral{% endif %}">
+                               <i class="fa-solid {% if stats.month_approved.change > 0 %}fa-arrow-trend-up{% elif stats.month_approved.change < 0 %}fa-arrow-trend-down{% else %}fa-minus{% endif %}"></i>
+                               {{ stats.month_approved.change }}%
+                          </span>
+                          <span class="stat-period">oʻtgan oyga nisbatan</span>
+                          {% else %}
+                          <span class="stat-period">O'tgan oy ma'lumoti yo'q</span>
+                          {% endif %}
+                     </div>
+                 </div>
+
+                 {# Card 3: Active Reviewing #}
+                 <div class="stat-card">
+                     <div class="stat-card-header">
+                         <div class="stat-card-icon-wrapper orange"><i class="fa-solid fa-user-clock"></i></div>
+                         <div class="stat-card-title">Faol koʻrib chiqilmoqda</div>
+                     </div>
+                      {# Use the specific count for reviewing status #}
+                     <div class="stat-card-value" data-target="{{ stats.active_reviewing.value }}">{{ stats.active_reviewing.value }}</div>
+                     <div class="stat-card-footer">
+                         {% if stats.active_reviewing.change is not None %}
+                         {# Note: Logic might be reversed (fewer reviewing might be better?) Adjust if needed #}
+                         <span class="stat-change {% if stats.active_reviewing.change < 0 %}positive{% elif stats.active_reviewing.change > 0 %}negative{% else %}neutral{% endif %}">
+                              <i class="fa-solid {% if stats.active_reviewing.change < 0 %}fa-arrow-trend-up{% elif stats.active_reviewing.change > 0 %}fa-arrow-trend-down{% else %}fa-minus{% endif %}"></i>
+                              {{ stats.active_reviewing.change }}%
+                         </span>
+                         <span class="stat-period">oʻtgan haftaga nisbatan</span>
+                         {% else %}
+                          <span class="stat-period">O'tgan hafta ma'lumoti yo'q</span> {# Show only if no change data #}
+                         {% endif %}
+                     </div>
+                 </div>
+
+                 {# Card 4: Needs Clarification #}
+                 <div class="stat-card">
+                     <div class="stat-card-header">
+                         <div class="stat-card-icon-wrapper red"><i class="fa-solid fa-circle-exclamation"></i></div> {# Changed icon back #}
+                         <div class="stat-card-title">Aniqlashtirish kutilmoqda</div> {# Changed title back #}
+                     </div>
+                      {# Use the specific count for clarification status #}
+                     <div class="stat-card-value" data-target="{{ stats.needs_attention.value }}">{{ stats.needs_attention.value }}</div>
+                     <div class="stat-card-footer">
+                          {% if stats.needs_attention.change is not None %}
+                           {# TODO: Implement change calculation logic in views.py if needed #}
+                           <span class="stat-change positive"><i class="fa-solid fa-arrow-trend-up"></i> {{ stats.needs_attention.change }}%</span> {# Placeholder for change #}
+                           <span class="stat-period">o'zgarish</span> {# Placeholder for period #}
+                          {% else %}
+                             <span class="stat-period">Hozirda mavjud</span> {# Show only if no change data #}
+                          {% endif %}
+                     </div>
+                 </div>
+            </div>
+
+            <!-- Charts and Totals Row -->
+            <div class="dashboard-row">
+                <!-- Ariza holatlari bo'yicha grafik -->
+                <div class="chart-wrapper card-table-wrapper">
+                    <h2 class="table-title">Arizalar Holati Bo'yicha Taqsimot</h2>
+                     <div class="chart-container">
+                        <div id="applicationsChart-loader" class="chart-loader">Yuklanmoqda...</div>
+                        <canvas id="applicationsChart"></canvas>
+                    </div>
+                </div>
+
+                 <!-- Umumiy Statistikalar -->
+                <div class="totals-wrapper card-table-wrapper">
+                    <h2 class="table-title">Umumiy Statistikalar</h2>
+                    <ul class="totals-list">
+                        <li>
+                            <i class="fa-solid fa-folder-open icon-blue"></i> {# Added color class #}
+                            <span>Jami Arizalar:</span>
+                            <strong>{{ total_applications }}</strong>
+                        </li>
+                        <li>
+                            <i class="fa-solid fa-check-circle icon-green"></i> {# Added color class #}
+                            <span>Ma'qullanganlar:</span>
+                            <strong>{{ total_approved }}</strong>
+                        </li>
+                        <li>
+                           <i class="fa-solid fa-hourglass-half icon-orange"></i> {# Added color class #}
+                            <span>Kutilayotganlar:</span>
+                            <strong>{{ total_pending }}</strong>
+                        </li>
+                        <li>
+                            <i class="fa-solid fa-times-circle icon-red"></i> {# Added color class #}
+                            <span>Rad Etilganlar:</span>
+                            <strong>{{ total_rejected }}</strong>
+                        </li>
+                    </ul>
+                     <p class="totals-note">Barcha vaqtlar uchun umumiy ko'rsatkichlar.</p>
+                </div>
+            </div>
+
+
+            <!-- So'nggi arizalar jadvali -->
+            <div class="card-table-wrapper">
+                <div class="table-header-controls">
+                    <h2 class="table-title">Soʻnggi Arizalar (Oxirgi 5 ta)</h2>
+                    <div class="table-filters">
+                        <div class="table-actions">
+                                <a href="{% url 'all_applications' %}" class="btn btn-outline-primary btn-sm">Barchasini koʻrish <i class="fa-solid fa-arrow-right"></i></a>
+                                <a href="{% url 'my_applications' %}" class="btn btn-outline-primary btn-sm">Mening arizalarim <i class="fa-solid fa-arrow-right"></i></a>
+                            </div>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="cool-table" id="applications-table">
+                        <thead>
+                        <tr>
+                            <th>Ariza beruvchi</th>
+                            <th>Stipendiya</th>
+                            <th>Yuborilgan sana</th>
+                            <th>Holati</th>
+                            <th>Amallar</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for app in recent_applications %}
+                        <tr>
+                            <td>
+                                <div class="applicant-info">
+                                    <div>
+                                        <span class="applicant-name">{{ app.applicant_full_name|default:app.applicant.get_full_name|default:app.applicant.username }}</span>
+                                        <span class="applicant-email">{{ app.applicant_email|default:app.applicant.email }}</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ app.scholarship.name }}</td>
+                            <td>{{ app.submission_date|date:"Y-m-d H:i" }}</td>
+                            <td>
+                                <span class="status-badge status-{{ app.status }}">
+                                    <i class="fa-solid {% if app.status == 'approved' %}fa-check-circle{% elif app.status == 'rejected' %}fa-times-circle{% elif app.status == 'reviewing' %}fa-hourglass-half{% elif app.status == 'clarification' %}fa-triangle-exclamation{% elif app.status == 'submitted' %}fa-paper-plane{% else %}fa-question-circle{% endif %}"></i>
+                                    {{ app.get_status_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="view-btn action-btn" title="Ko'rish" data-app-id="{{ app.id }}" data-url="{% url 'application_details_api' app.id %}">
+                                        <i class="fa-solid fa-eye"></i>
+                                    </button>
+                                    <button class="edit-btn action-btn" title="Statusni o'zgartirish" data-app-id="{{ app.id }}" data-current-status="{{ app.status }}" data-url="{% url 'application_change_status_api' app.id %}">
+                                        <i class="fa-solid fa-pen"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" style="text-align: center; padding: 20px;">Hozircha arizalar yoʻq.</td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div> {# End animate-on-load #}
+    </main>
+
+    <!-- Footer -->
+    <footer class="main-footer">
+        🚀 "Shaffof Imkoniyat" Boshqaruv Paneli v1.1 | Halol kelajak uchun <i class="fa-solid fa-heart red-heart"></i> bilan yaratilgan | <a href="{% url 'help_center' %}">Yordam Markazi</a>
+    </footer>
+</div>
+
+{# Application Details Modal (Keep as is) #}
+<div class="modal fade" id="applicationDetailsModal" tabindex="-1" aria-labelledby="applicationDetailsModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="applicationDetailsModalLabel">Ariza Tafsilotlari (#<span id="modal-app-id"></span>)</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p><strong>Ariza beruvchi:</strong> <span id="modal-applicant-name"></span> (<span id="modal-applicant-email"></span>)</p>
+        <p><strong>Stipendiya:</strong> <span id="modal-scholarship-name"></span></p>
+        <p><strong>Yuborilgan sana:</strong> <span id="modal-submission-date"></span></p>
+        <p><strong>Oxirgi yangilanish:</strong> <span id="modal-last-updated"></span></p>
+        <p><strong>Holati:</strong> <span id="modal-status-badge"></span></p>
+        <hr>
+        <h6>Hujjatlar:</h6>
+        <ul id="modal-documents-list" style="list-style: none; padding-left: 0;"> {# Basic styling #}
+            {# Documents will be populated by JS #}
+        </ul>
+        <hr>
+        <h6>Admin Izohlari:</h6>
+        <pre id="modal-review-notes" style="white-space: pre-wrap; word-break: break-word; background-color: #f8f9fa; padding: 10px; border-radius: 4px;"></pre> {# Basic styling #}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Yopish</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# Change Status Modal (Keep as is, but ensure status_choices is passed from view) #}
+<div class="modal fade" id="changeStatusModal" tabindex="-1" aria-labelledby="changeStatusModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="changeStatusModalLabel">Ariza Holatini O'zgartirish (#<span id="modal-status-app-id"></span>)</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form id="changeStatusForm">
+          {% csrf_token %}
+          <input type="hidden" id="modal-status-app-id-input" name="app_id">
+          <div class="modal-body">
+              <div class="mb-3">
+                <label for="new_status" class="form-label">Yangi Holat:</label>
+                <select class="form-select" id="new_status" name="status" required>
+                    {# Ensure 'status_choices' is in context from views.py dashboard function #}
+                    {% for value, display in status_choices %}
+                       <option value="{{ value }}">{{ display }}</option>
+                    {% endfor %}
+                </select>
+              </div>
+              <div class="mb-3">
+                  <label for="review_notes" class="form-label">Izoh (Ixtiyoriy):</label>
+                  <textarea class="form-control" id="review_notes" name="notes" rows="3"></textarea>
+              </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bekor qilish</button>
+            <button type="submit" class="btn btn-primary">Saqlash</button>
+          </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock content %}
+
+{% block extra_scripts %}
+{# Ensure Chart.js is loaded in base.html #}
+<script>
+    // --- Helper function for CSRF token (needed for AJAX POST) ---
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    const csrftoken = getCookie('csrftoken');
+
+    // --- Chart Initialization ---
+    function initApplicationsStatusChart(ctx, chartConfig) {
+        const statusColors = { // Using keys directly matching Application.STATUS_CHOICES display values
+            'Yuborilgan': 'rgba(54, 162, 235, 0.7)',   // Submitted (Blue)
+            'Ko\'rib chiqilmoqda': 'rgba(255, 159, 64, 0.7)', // Reviewing (Orange)
+            'Aniqlashtirilmoqda': 'rgba(255, 205, 86, 0.7)', // Clarification (Yellow)
+            'Ma\'qullangan': 'rgba(75, 192, 192, 0.7)',   // Approved (Green)
+            'Rad etilgan': 'rgba(255, 99, 132, 0.7)',    // Rejected (Red)
+            // Add default for safety
+            'default': 'rgba(201, 203, 207, 0.7)' // Gray
+        };
+         // Map labels to colors, handle potential missing labels
+        const backgroundColors = chartConfig.labels.map(label => statusColors[label] || statusColors['default']);
+        const borderColors = backgroundColors.map(color => color.replace('0.7', '1'));
+
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: chartConfig.labels,
+                datasets: [{
+                    label: 'Arizalar Holati',
+                    data: chartConfig.data,
+                    backgroundColor: backgroundColors,
+                    borderColor: borderColors,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom', // Better position for doughnut
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed !== null) {
+                                    // Calculate percentage
+                                    const total = context.dataset.data.reduce((acc, value) => acc + value, 0);
+                                    const percentage = total > 0 ? ((context.parsed / total) * 100).toFixed(1) + '%' : '0%';
+                                    label += `${context.parsed} (${percentage})`;
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        document.getElementById('applicationsChart-loader')?.remove();
+    }
+
+    // --- Animate Stat Card Values ---
+    function animateValue(element, start, end, duration) {
+        if (!element || isNaN(end)) { // Check if end is a valid number
+             if(element) element.textContent = element.textContent || '0'; // Display current text or 0 if invalid
+             return;
+         }
+        let startTimestamp = null;
+        const step = (timestamp) => {
+            if (!startTimestamp) startTimestamp = timestamp;
+            const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+            element.textContent = Math.floor(progress * (end - start) + start).toLocaleString('uz-UZ'); // Use locale for formatting if needed
+            if (progress < 1) {
+                window.requestAnimationFrame(step);
+            } else {
+                 element.textContent = end.toLocaleString('uz-UZ'); // Ensure final value is exact
+            }
+        };
+        window.requestAnimationFrame(step);
+    }
+
+    // --- DOMContentLoaded Event Listener ---
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize Chart
+        const ctx = document.getElementById('applicationsChart')?.getContext('2d');
+        const loader = document.getElementById('applicationsChart-loader');
+        const chartContainer = ctx?.canvas.parentNode;
+
+        if (ctx && loader && chartContainer) {
+            try {
+                const chartLabels = JSON.parse('{{ chart_labels|escapejs|default:"[]" }}');
+                const chartData = JSON.parse('{{ chart_data|escapejs|default:"[]" }}');
+
+                // Check if there is actual data to display
+                const hasData = chartData.some(value => value > 0);
+
+                if (chartLabels && chartData && chartLabels.length > 0 && hasData) {
+                     initApplicationsStatusChart(ctx, { labels: chartLabels, data: chartData });
+                } else {
+                     loader.remove();
+                     chartContainer.innerHTML = '<p style="text-align:center; padding: 40px 20px; color: #6c757d;">Grafik uchun ma\'lumot yo\'q.</p>';
+                }
+            } catch (e) {
+                console.error("Error processing chart data:", e);
+                loader.remove();
+                chartContainer.innerHTML = '<p style="text-align:center; padding: 40px 20px; color: #dc3545;">Grafikni yuklashda xatolik yuz berdi.</p>';
+            }
+        } else if(loader) {
+             loader.remove(); // Remove loader if canvas/context not found
+             if(chartContainer) chartContainer.innerHTML = '<p style="text-align:center; padding: 40px 20px; color: #6c757d;">Grafik elementi topilmadi.</p>';
+        }
+
+        // Animate KPI values
+        document.querySelectorAll('.stat-card-value[data-target]').forEach(el => {
+             const targetValue = parseInt(el.dataset.target);
+             animateValue(el, 0, targetValue, 1500);
+        });
+
+        // --- Modal Handling ---
+        const detailsModalElement = document.getElementById('applicationDetailsModal');
+        const statusModalElement = document.getElementById('changeStatusModal');
+        const detailsModal = detailsModalElement ? new bootstrap.Modal(detailsModalElement) : null;
+        const statusModal = statusModalElement ? new bootstrap.Modal(statusModalElement) : null;
+
+        // View Button Click
+        document.querySelectorAll('.view-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                if (!detailsModal) return; // Don't proceed if modal doesn't exist
+                const url = this.dataset.url;
+                // Show loading state in modal maybe?
+                fetch(url)
+                    .then(response => {
+                        if (!response.ok) throw new Error(`Server xatosi: ${response.status}`);
+                        return response.json();
+                     })
+                    .then(data => {
+                        // Populate Modal - Safely access data
+                        document.getElementById('modal-app-id').textContent = data.id || 'N/A';
+                        document.getElementById('modal-applicant-name').textContent = data.applicant_name || 'N/A';
+                        document.getElementById('modal-applicant-email').textContent = data.applicant_email || 'N/A';
+                        document.getElementById('modal-scholarship-name').textContent = data.scholarship_name || 'N/A';
+                        document.getElementById('modal-submission-date').textContent = data.submission_date || 'N/A';
+                        document.getElementById('modal-last-updated').textContent = data.last_updated || 'N/A';
+                        document.getElementById('modal-status-badge').innerHTML = data.status_badge_html || `<span class="status-badge status-unknown">${data.status_display || 'Noma\'lum'}</span>`;
+                        document.getElementById('modal-review-notes').textContent = data.review_notes || 'Izohlar yo\'q.';
+
+                        const docsList = document.getElementById('modal-documents-list');
+                        docsList.innerHTML = ''; // Clear previous docs
+                        if (data.documents && data.documents.length > 0) {
+                            data.documents.forEach(doc => {
+                                const li = document.createElement('li');
+                                const a = document.createElement('a');
+                                a.href = doc.url || '#';
+                                a.textContent = `${doc.type_display || 'Hujjat'}: ${doc.filename || 'fayl'}`;
+                                a.target = '_blank';
+                                a.rel = 'noopener noreferrer'; // Security best practice
+                                const icon = document.createElement('i');
+                                icon.className = 'fa-solid fa-file-arrow-down ms-2'; // Add download icon
+                                a.appendChild(icon);
+                                li.appendChild(a);
+                                docsList.appendChild(li);
+                            });
+                        } else {
+                            docsList.innerHTML = '<li>Hujjatlar yuklanmagan.</li>';
+                        }
+                        detailsModal.show();
+                    })
+                    .catch(error => {
+                        console.error('Error fetching application details:', error);
+                        // Consider using a more user-friendly notification system
+                        alert(`Ariza ma'lumotlarini olishda xatolik: ${error.message}`);
+                    });
+            });
+        });
+
+        // Edit/Change Status Button Click
+        document.querySelectorAll('.edit-btn').forEach(button => {
+             button.addEventListener('click', function() {
+                if (!statusModal) return;
+                const appId = this.dataset.appId;
+                const currentStatus = this.dataset.currentStatus;
+                document.getElementById('modal-status-app-id').textContent = appId;
+                document.getElementById('modal-status-app-id-input').value = appId;
+                document.getElementById('new_status').value = currentStatus;
+                document.getElementById('review_notes').value = '';
+                statusModal.show();
+            });
+        });
+
+        // Change Status Form Submission
+        const changeStatusForm = document.getElementById('changeStatusForm');
+        if (changeStatusForm && statusModal) {
+            changeStatusForm.addEventListener('submit', function(event) {
+                event.preventDefault();
+                const appId = document.getElementById('modal-status-app-id-input').value;
+                 // Construct the URL robustly (ensure your URL name is correct)
+                const url = "{% url 'application_change_status_api' pk=0 %}".replace('0', appId);
+                const submitButton = changeStatusForm.querySelector('button[type="submit"]');
+                const originalButtonText = submitButton.innerHTML;
+                submitButton.disabled = true;
+                submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saqlanmoqda...';
+
+
+                const formData = {
+                    status: document.getElementById('new_status').value,
+                    notes: document.getElementById('review_notes').value
+                };
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrftoken,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify(formData)
+                })
+                .then(response => response.json().then(data => ({ status: response.status, body: data }))) // Process JSON regardless of status
+                .then(({ status, body }) => {
+                     if (status >= 200 && status < 300 && body.success) {
+                        statusModal.hide();
+                        // Update table row
+                        const row = document.querySelector(`button[data-app-id="${appId}"]`)?.closest('tr');
+                        if (row) {
+                           const statusCell = row.querySelector('td:nth-child(4) span.status-badge');
+                           const editBtn = row.querySelector(`.edit-btn[data-app-id="${appId}"]`);
+                           if (statusCell) {
+                                statusCell.className = `status-badge status-${body.new_status}`;
+                                statusCell.innerHTML = body.status_badge_html || `<i class="fa-solid ..."></i> ${body.new_status_display}`; // Update dynamic icon later if needed
+                           }
+                           if(editBtn) editBtn.dataset.currentStatus = body.new_status;
+                        }
+                         // Show success message (replace alert later)
+                         alert('Status muvaffaqiyatli o\'zgartirildi!');
+                         // Force redraw totals if needed (more complex)
+                         // window.location.reload(); // Simple solution, but less smooth UX
+                    } else {
+                        // Handle failure, show error message from response body if available
+                        const errorMessage = body.error || (status === 403 ? "Ruxsat yo'q" : 'Noma\'lum xatolik yuz berdi.');
+                        alert(`Xatolik (${status}): ${errorMessage}`);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error changing status:', error);
+                    alert('Statusni o\'zgartirishda server bilan bog\'lanishda xatolik yuz berdi.');
+                })
+                .finally(() => {
+                    // Re-enable button and restore text
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = originalButtonText;
+                 });
+            });
+        }
+
+    }); // End DOMContentLoaded
+</script>
+
+
+{% endblock %}

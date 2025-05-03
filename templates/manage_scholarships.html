@@ -1,0 +1,389 @@
+{% extends 'base.html' %}
+{% load static %}
+
+
+{% block content %}
+<div class="main-content-wrapper">
+    <!-- Header (Minimal) -->
+     <header class="main-header">
+        <div class="header-left">
+           <button class="menu-toggle-btn" id="menu-toggle" title="Menyuni yig'ish/kengaytirish" aria-label="Menyu">
+               <i class="fa-solid fa-bars"></i>
+           </button>
+       </div>
+       <div class="header-right">
+            {# Profil rasmi #}
+            <div class="profile-dropdown" title="Profil sozlamalari">
+             </div>
+       </div>
+   </header>
+
+    <!-- Sahifa kontenti -->
+    <main class="page-content">
+        <h1 class="page-title">Stipendiyalarni Boshqarish</h1>
+         <div class="animate-on-load">
+             <div class="card-table-wrapper">
+                <div class="table-header-controls">
+                    <h2 class="table-title">Stipendiyalar Roʻyxati</h2>
+                    <form method="get" class="table-filters">
+                        <div class="table-search">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input type="text" name="search" id="manage-sch-search-input" placeholder="Nomi, ta'minotchi bo'yicha qidirish..." value="{{ request.GET.search|default:'' }}">
+                        </div>
+                        <div class="table-actions">
+                             <select name="status_filter" id="manage-sch-status-filter" class="btn btn-secondary btn-sm" style="height: 38px;">
+                                 <option value="">Barcha holatlar</option>
+                                 {% for value, display in status_choices %}
+                                 <option value="{{ value }}" {% if request.GET.status_filter == value %}selected{% endif %}>{{ display }}</option>
+                                 {% endfor %}
+                             </select>
+                             <button type="submit" class="btn btn-light btn-sm"><i class="fa-solid fa-filter"></i> Filtr</button>
+                             <a href="{% url 'manage_scholarships' %}" class="btn btn-secondary btn-sm"><i class="fa-solid fa-times"></i> Tozalash</a>
+                             {# BU TUGMA MODALNI OCHADI #}
+                            <button type="button" class="btn btn-primary btn-sm" id="add-scholarship-btn"><i class="fa-solid fa-plus"></i> Stipendiya Qoʻshish</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="table-responsive">
+                    <table class="cool-table" id="scholarships-manage-table">
+                        {# ... thead va tbody (avvalgi javobdagi kabi) ... #}
+                         <thead>
+                            <tr>
+                                <th>Stipendiya Nomi</th>
+                                <th>Ta'minotchi</th>
+                                <th>Muddat</th>
+                                <th>Turi</th>
+                                <th>Arizalar Soni</th>
+                                <th>Holati</th>
+                                <th>Amallar</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for sch in page_obj %}
+                            <tr id="sch-row-{{ sch.id }}">
+                                <td>{{ sch.name }} {% if sch.popular %}<i class="fa-solid fa-fire" style="color: var(--accent-orange);" title="Ommabop"></i>{% endif %}</td>
+                                <td>{{ sch.provider }}</td>
+                                <td>{{ sch.deadline|date:"Y-m-d"|default:"-" }}</td>
+                                <td>{{ sch.get_type_display }}</td>
+                                <td>
+                                     {% if sch.application_count > 0 %}
+                                        <a href="{% url 'all_applications' %}?scholarship_filter={{ sch.id }}">{{ sch.application_count }}</a>
+                                     {% else %}
+                                        0
+                                     {% endif %}
+                                </td>
+                                <td id="status-cell-{{ sch.id }}">
+                                    <span class="status-badge status-{{ sch.status }}">
+                                        <i class="fa-solid {% if sch.status == 'active' %}fa-check-circle{% elif sch.status == 'completed' %}fa-archive{% else %}fa-edit{% endif %}"></i>
+                                        {{ sch.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="action-buttons">
+                                        {% if sch.application_count > 0 %}
+                                        <a href="{% url 'all_applications' %}?scholarship_filter={{ sch.id }}" class="view-btn" title="Arizalarni ko'rish"><i class="fa-solid fa-users"></i></a>
+                                        {% endif %}
+                                        {# BU TUGMA MODALNI Tahrirlash uchun ochadi #}
+                                        <button type="button" class="edit-btn" title="Tahrirlash" data-schid="{{ sch.id }}"><i class="fa-solid fa-pen"></i></button>
+                                        <button type="button" class="toggle-status-btn"
+                                                title="{% if sch.status == 'active' %}Tugatish/Arxivlash{% else %}Faollashtirish{% endif %}"
+                                                data-schid="{{ sch.id }}"
+                                                data-url="{% url 'scholarship_toggle_status' sch.id %}"
+                                                data-csrf="{{ csrf_token }}">
+                                            <i class="fa-solid {% if sch.status == 'active' %}fa-archive{% else %}fa-check{% endif %}"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" style="text-align: center; padding: 40px 0;">Stipendiyalar topilmadi.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+    <!-- Footer -->
+</div>
+
+<!-- ================== MODAL OYNA HTML ================== -->
+{# Bu div sahifa yuklanganda CSS tufayli ko'rinmas bo'lishi kerak #}
+<div id="scholarship-modal" class="modal"> {# Klass 'modal' #}
+    <div class="modal-content">
+        {# Yopish tugmasi #}
+        <button type="button" class="modal-close" id="modal-close-btn" aria-label="Yopish">×</button>
+        <div class="modal-header">
+            <h2 id="modal-title">Yangi stipendiya qo'shish</h2>
+        </div>
+        {# Forma AJAX yoki oddiy POST uchun #}
+        <form id="scholarship-form" method="post" action="{% url 'scholarship_create' %}"> {# Action JS da o'zgarishi mumkin #}
+            {% csrf_token %}
+            <input type="hidden" id="scholarship-edit-id" name="scholarship_id">
+            <div class="modal-body">
+                 {# Formadagi umumiy xatoliklarni ko'rsatish #}
+                 <div id="form-non-field-errors" class="form-errors" style="display: none;"></div>
+                 {# Formani include yordamida render qilish #}
+                 {% include 'includes/form_fields.html' with form=form %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="modal-cancel-btn">Bekor qilish</button>
+                <button type="submit" class="btn btn-primary" id="modal-save-btn">Saqlash</button>
+            </div>
+        </form>
+    </div>
+</div>
+<!-- ================== END MODAL OYNA HTML ================== -->
+
+{% endblock content %}
+
+{% block extra_scripts %}
+{# Modalni ochish/yopish va AJAX uchun JS #}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const modal = document.getElementById('scholarship-modal');
+    const form = document.getElementById('scholarship-form');
+    const addBtn = document.getElementById('add-scholarship-btn');
+    const closeBtn = document.getElementById('modal-close-btn');
+    const cancelBtn = document.getElementById('modal-cancel-btn');
+    const editIdInput = document.getElementById('scholarship-edit-id');
+    const modalTitle = document.getElementById('modal-title');
+    const saveBtn = document.getElementById('modal-save-btn');
+    const nonFieldErrorsDiv = document.getElementById('form-non-field-errors'); // Xatolik uchun div
+
+    // --- Helper Functions ---
+    function getCookie(name) { // CSRF token olish
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    function showToast(message, title = 'Bildirishnoma', type = 'info', duration = 5000) {
+        // Sizning Toast xabarnoma funksiyangiz (agar mavjud bo'lsa)
+        console.log(`[${type.toUpperCase()}] ${title}: ${message}`);
+        // Haqiqiy Toast kutubxonasini chaqirish kerak bo'ladi
+        const messagesContainer = document.querySelector('.messages-container') || document.body; // Yoki boshqa konteyner
+        const toast = document.createElement('div');
+        toast.className = `toast-message toast-${type}`; // CSS klasslari
+        toast.innerHTML = `<span>${message}</span><button type="button" class="btn-close-toast" onclick="this.parentElement.remove();">×</button>`;
+        messagesContainer.appendChild(toast);
+        setTimeout(() => {
+            toast.style.transition = 'opacity 0.5s ease';
+            toast.style.opacity = '0';
+            setTimeout(() => toast.remove(), 500);
+        }, duration);
+    }
+
+    function clearFormErrors() { // Formadagi xatoliklarni tozalash
+        nonFieldErrorsDiv.style.display = 'none';
+        nonFieldErrorsDiv.innerHTML = '';
+        form.querySelectorAll('.form-group').forEach(fg => {
+            fg.classList.remove('has-error');
+            fg.querySelector('.error-message')?.remove();
+        });
+        form.querySelectorAll('input, select, textarea').forEach(inp => inp.style.borderColor = '');
+    }
+
+    function displayFormErrors(errors) { // Formalardagi xatoliklarni ko'rsatish
+        clearFormErrors();
+        for (const field in errors) {
+            if (field === '__all__') {
+                nonFieldErrorsDiv.innerHTML = errors[field].join('<br>');
+                nonFieldErrorsDiv.style.display = 'block';
+            } else {
+                const input = form.elements[field];
+                if (input) {
+                    const formGroup = input.closest('.form-group');
+                    formGroup?.classList.add('has-error');
+                    input.style.borderColor = 'var(--accent-red)';
+                    const errorSpan = document.createElement('span');
+                    errorSpan.classList.add('error-message');
+                    errorSpan.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> ${errors[field].join(', ')}`;
+                    input.parentNode.insertBefore(errorSpan, input.nextSibling);
+                }
+            }
+        }
+    }
+
+
+    // --- Modal Ochish/Yopish Logikasi ---
+    function openModal(data = null) {
+        clearFormErrors(); // Xatoliklarni tozalash
+        form.reset();
+        form.action = "{% url 'scholarship_create' %}"; // Default action
+        editIdInput.value = '';
+        modalTitle.textContent = 'Yangi stipendiya qoʻshish';
+
+        if (data) { // Tahrirlash rejimi
+            form.action = `/api/scholarships/update/${data.id}/`; // API URL ga o'zgartirish
+            editIdInput.value = data.id; // ID ni hidden inputga qo'yish
+            modalTitle.textContent = 'Stipendiyani tahrirlash';
+            // Formani backenddan kelgan ma'lumotlar bilan to'ldirish
+            for (const key in data) {
+                const input = form.elements[key]; // Form elementini topish
+                if (input) {
+                    if (input.type === 'checkbox') {
+                        input.checked = data[key];
+                    } else if (input.type === 'date') {
+                        // Sana formati YYYY-MM-DD bo'lishi kerak
+                        input.value = data[key] ? data[key].split('T')[0] : '';
+                    } else {
+                        input.value = data[key];
+                    }
+                }
+            }
+        }
+        modal.classList.add('active'); // <<-- MODALNI KO'RSATISH
+         // Birinchi inputga fokus berish
+         setTimeout(() => { form.elements['name']?.focus(); }, 100);
+    }
+
+    function closeModal() {
+        modal.classList.remove('active'); // <<-- MODALNI YASHIRISH
+    }
+
+    // Event Listenerlar
+    addBtn.addEventListener('click', () => openModal()); // Qo'shish tugmasi
+    closeBtn.addEventListener('click', closeModal);      // Yopish (X) tugmasi
+    cancelBtn.addEventListener('click', closeModal);     // Bekor qilish tugmasi
+    modal.addEventListener('click', (e) => {              // Tashqariga bossa yopish
+        if (e.target === modal) closeModal();
+    });
+
+    // --- Tahrirlash Tugmalari ---
+    document.querySelectorAll('.edit-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const schId = e.currentTarget.dataset.schid;
+            saveBtn.disabled = true; // Ma'lumot yuklanayotganda saqlashni bloklash
+            saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Yuklanmoqda...';
+            // Backenddan ma'lumotlarni olish (API endpoint orqali)
+            fetch(`/api/scholarships/update/${schId}/`, { // GET so'rovi
+                 headers: {'X-Requested-With': 'XMLHttpRequest'}
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok');
+                return response.json();
+            })
+            .then(data => {
+                openModal(data); // Modalni ma'lumotlar bilan ochish
+            })
+            .catch(error => {
+                console.error("Error fetching scholarship:", error);
+                showToast('Stipendiya maʼlumotlarini olishda xatolik.', 'Xatolik', 'error');
+            })
+            .finally(() => {
+                saveBtn.disabled = false; // Saqlash tugmasini aktiv qilish
+                saveBtn.innerHTML = 'Saqlash';
+            });
+        });
+    });
+
+    // --- Formani AJAX orqali jo'natish ---
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saqlanmoqda...';
+        clearFormErrors(); // Xatoliklarni tozalash
+
+        const formData = new FormData(form);
+        const url = form.action; // URL form actionidan olinadi (create yoki update)
+
+        fetch(url, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json().then(data => ({ status: response.status, body: data })))
+        .then(({ status, body }) => {
+             if (status === 200 && body.success) {
+                 closeModal();
+                 showToast(editIdInput.value ? 'Stipendiya muvaffaqiyatli yangilandi.' : 'Stipendiya muvaffaqiyatli qoʻshildi.', 'Muvaffaqiyatli', 'success');
+                 // Sahifani yangilash (eng oson yo'l)
+                 setTimeout(() => window.location.reload(), 1500); // 1.5 sekdan keyin
+             } else if (status === 400 && body.errors) {
+                 // Validatsiya xatoliklarini ko'rsatish
+                 displayFormErrors(body.errors);
+                 showToast('Iltimos, formadagi xatoliklarni toʻgʻrilang.', 'Xatolik', 'error', 7000);
+             } else {
+                  // Boshqa xatoliklar
+                  showToast(body.error || 'Saqlashda nomaʼlum xatolik yuz berdi.', 'Xatolik', 'error');
+             }
+        })
+        .catch(error => {
+            console.error("Error submitting form:", error);
+            showToast('Server bilan bogʻlanishda xatolik.', 'Xatolik', 'error');
+        })
+        .finally(() => {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = 'Saqlash';
+        });
+    });
+
+    // --- Statusni O'zgartirish (AJAX POST) ---
+    document.querySelectorAll('.toggle-status-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const button = e.currentTarget;
+            const url = button.dataset.url;
+            const csrf = button.dataset.csrf;
+            const schId = button.dataset.schid;
+
+            if (!confirm('Haqiqatan ham statusni oʻzgartirmoqchimisiz?')) return;
+
+            button.disabled = true;
+            button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrf,
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.ok ? response.json() : Promise.reject('Error toggling status'))
+            .then(data => {
+                 if (data.success) {
+                     const statusCell = document.getElementById(`status-cell-${schId}`);
+                     const actionButtonIcon = button.querySelector('i');
+                     if (statusCell) {
+                          // Statusni yangilash
+                          statusCell.innerHTML = `<span class="status-badge status-${data.new_status_val}"><i class="fa-solid ${data.new_status_val === 'active' ? 'fa-check-circle' : 'fa-archive'}"></i> ${data.new_status_display}</span>`;
+                     }
+                     // Tugmani yangilash
+                     button.title = data.new_status_val === 'active' ? 'Tugatish/Arxivlash' : 'Faollashtirish';
+                     if (actionButtonIcon) {
+                         actionButtonIcon.className = `fa-solid ${data.new_status_val === 'active' ? 'fa-archive' : 'fa-check'}`;
+                     }
+                     showToast('Status muvaffaqiyatli oʻzgartirildi.', 'Muvaffaqiyatli', 'success');
+                 } else {
+                     showToast(data.error || 'Statusni oʻzgartirishda xatolik.', 'Xatolik', 'error');
+                 }
+            })
+            .catch(error => {
+                console.error("Error toggling status:", error);
+                showToast('Server bilan bogʻlanishda xatolik.', 'Xatolik', 'error');
+                 // Xato bo'lsa tugma ikonkasini tiklash uchun asl holatini saqlab qo'yish kerak
+                  button.innerHTML = `<i class="fa-solid ${button.title.includes('Tugatish') ? 'fa-archive' : 'fa-check'}"></i>`; // Taxminiy tiklash
+            })
+            .finally(() => {
+                button.disabled = false;
+            });
+        });
+    });
+
+});
+</script>
+{% endblock %}
