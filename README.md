@@ -1,4 +1,4 @@
-# 🚀 Grant Platformasi (Loyihangizga Yaxshiroq Nom Berishni Unutmang!)
+# 🚀 SHAFFOF IMKONIYAT 
 
 [![Litsenziya](https://img.shields.io/badge/Litsenziya-MIT-blue.svg)](https://opensource.org/licenses/MIT) 
 [![Python Versiyasi](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/)
