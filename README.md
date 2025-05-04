@@ -184,8 +184,3 @@ Loyiha frontend qismi (JavaScript) bilan ma'lumot almashish uchun quyidagi asosi
 
 *(Bu endpointlar odatda sahifani yangilamasdan ma'lumotlarni olish yoki o'zgartirish uchun AJAX so'rovlari orqali chaqiriladi).*
 
----
-
-## 📁 Fayl Strukturasi
-
-(Avvalgi javobdagi fayl strukturasi tavsifi o'zgarishsiz qoladi, chunki u sizning rasmingizga mos keladi.)
