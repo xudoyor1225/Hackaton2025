@@ -174,7 +174,10 @@ body {
 }
 .sidebar-logo:hover .sidebar-logo-icon { transform: rotate(-10deg) scale(1.1); box-shadow: var(--shadow-glow-primary); }
 .sidebar-logo-text {
-     font-size: 1.5rem; font-weight: 700; color: var(--text-white);
+     font-size: 1.8rem; font-weight: 700; color: var(--text-white);
+    text-decoration: none !important;
+      text-shadow: 2px 2px 4px white;
+
      white-space: nowrap; letter-spacing: var(--letter-spacing-tight);
 }
 
