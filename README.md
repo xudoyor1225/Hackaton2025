@@ -6,7 +6,7 @@
 
 **Talabalar uchun grantlar (stipendiyalar) topish, ularga ariza topshirish va arizalar holatini kuzatish imkonini beruvchi veb-platforma. Administratorlar uchun grantlarni va foydalanuvchilarni boshqarish vositalari mavjud.**
 
-<!-- ![Loyih![image](https://github.com/user-attachments/assets/8bc7d4ac-be71-40bd-bf9e-d8462abe37f3)
+Loyih![image](https://github.com/user-attachments/assets/8bc7d4ac-be71-40bd-bf9e-d8462abe37f3)
 a skrinshoti](images/screenshot.png) 
        ![image](https://github.com/user-attachments/assets/18cc5f6b-b1ca-4a60-a5d4-683e2ca9fe4f)
        ![image](https://github.com/user-attachments/assets/7822a632-266b-4f89-83f4-e5cda5591fea)
@@ -109,33 +109,28 @@ Loyihani ishga tushirishdan oldin quyidagilar o'rnatilganligiga ishonch hosil qi
     ```
     *(Agar `virtualm` ishlamasa, `python -m venv venv` bilan yangi muhit yarating va `venv` bilan aktivlashtiring).*
 
-3.  **❗️ Juda Muhim: `requirements.txt` faylini yaratish (agar mavjud bo'lmasa):**
-    ```bash
-    pip freeze > requirements.txt
-    ```
-    *Bu faylni Git'ga qo'shishni unutmang!*
 
-4.  **Kerakli paketlarni o'rnatish:**
+3.  **Kerakli paketlarni o'rnatish:**
     ```bash
     pip install -r requirements.txt
     ```
 
-5.  **Ma'lumotlar bazasi migratsiyalarini qo'llash:**
+4.  **Ma'lumotlar bazasi migratsiyalarini qo'llash:**
     ```bash
     python manage.py migrate
     ```
 
-6.  **(Ixtiyoriy lekin Tavsiya Etiladi) Superuser (administrator) yaratish:**
+5.  **(Ixtiyoriy lekin Tavsiya Etiladi) Superuser (administrator) yaratish:**
     ```bash
     python manage.py createsuperuser
     ```
 
-7.  **Rivojlantirish serverini ishga tushirish:**
+6.  **Rivojlantirish serverini ishga tushirish:**
     ```bash
     python manage.py runserver
     ```
 
-8.  **🎉 Tayyor!** Brauzeringizda [http://127.0.0.1:8000/](http://127.0.0.1:8000/) manzilini oching.
+7.  **🎉 Tayyor!** Brauzeringizda [http://127.0.0.1:8000/](http://127.0.0.1:8000/) manzilini oching.
 
 ---
 
