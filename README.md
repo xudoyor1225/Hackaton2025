@@ -32,11 +32,7 @@ Loyiha skrinshoti]![image](https://github.com/user-attachments/assets/8bc7d4ac-b
     *   [👤 Foydalanuvchi Sahifalari](#-foydalanuvchi-sahifalari)
     *   [👑 Admin Sahifalari](#-admin-sahifalari)
 *   [🔌 API Endpoints](#-api-endpoints)
-*   [📁 Fayl Strukturasi](#-fayl-strukturasi)
-*   [🤝 Hissa Qo'shish](#-hissa-qoshish)
-*   [📄 Litsenziya](#-litsenziya)
-*   [📧 Bog'lanish](#-boglanish)
-*   [🙏 Minnatdorchilik](#-minnatdorchilik-ixtiyoriy)
+  
 
 ---
 
