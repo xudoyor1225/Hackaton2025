@@ -7,8 +7,8 @@
 **Talabalar uchun grantlar (stipendiyalar) topish, ularga ariza topshirish va arizalar holatini kuzatish imkonini beruvchi veb-platforma. Administratorlar uchun grantlarni va foydalanuvchilarni boshqarish vositalari mavjud.**
 
 Loyiha skrinshoti]![image](https://github.com/user-attachments/assets/8bc7d4ac-be71-40bd-bf9e-d8462abe37f3)
-(images/screenshot.png) 
-       ![image](https://github.com/user-attachments/assets/18cc5f6b-b1ca-4a60-a5d4-683e2ca9fe4f)
+
+![image](https://github.com/user-attachments/assets/18cc5f6b-b1ca-4a60-a5d4-683e2ca9fe4f)
        ![image](https://github.com/user-attachments/assets/7822a632-266b-4f89-83f4-e5cda5591fea)
        ![image](https://github.com/user-attachments/assets/de47103a-b6fb-4896-8944-fff4320ac810)
        ![image](https://github.com/user-attachments/assets/58ea4fa6-080a-4be7-8af5-6d25ea6ce396)
